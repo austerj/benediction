@@ -28,20 +28,20 @@ class Column:
         top_ = top
         n_free_rows = sum(row.height is None for row in self._rows)
         free_height = height - sum(row.height if row.height is not None else 0 for row in self._rows)
-        free_height_frac = free_height // n_free_rows if n_free_rows > 0 else 0
         free_rows_allocated = 0
 
         # allocate height across rows
         for row in self._rows:
             if row.height is None:
-                free_rows_allocated += 1
                 # assign all remaining free height if last free row
-                if free_rows_allocated == n_free_rows:
+                if free_rows_allocated == n_free_rows - 1:
                     row_height = free_height
                 # else assign fraction of total free height if not the last free row
                 else:
+                    free_height_frac = free_height // (n_free_rows - free_rows_allocated)
                     free_height -= free_height_frac
                     row_height = free_height_frac
+                free_rows_allocated += 1
             else:
                 row_height = row.height
             row.update(left, top_, width, row_height)
@@ -90,20 +90,20 @@ class Row:
         left_ = left
         n_free_cols = sum(col.width is None for col in self._cols)
         free_width = width - sum(col.width if col.width is not None else 0 for col in self._cols)
-        free_width_frac = free_width // n_free_cols if n_free_cols > 0 else 0
         free_cols_allocated = 0
 
         # allocate width across cols
         for col in self._cols:
             if col.width is None:
-                free_cols_allocated += 1
                 # assign all remaining free width if last free col
-                if free_cols_allocated == n_free_cols:
+                if free_cols_allocated == n_free_cols - 1:
                     col_width = free_width
                 # else assign fraction of total free width if not the last free col
                 else:
+                    free_width_frac = free_width // (n_free_cols - free_cols_allocated)
                     free_width -= free_width_frac
                     col_width = free_width_frac
+                free_cols_allocated += 1
             else:
                 col_width = col.width
             col.update(left_, top, col_width, height)
