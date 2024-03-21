@@ -104,7 +104,7 @@ class Column:
     @property
     def window(self):
         if self._window is None:
-            raise RuntimeError("No window has been bound to Column.")
+            raise errors.UnboundWindowError("No window has been bound to Column.")
         return self._window
 
 
@@ -185,7 +185,7 @@ class Row:
     @property
     def window(self):
         if self._window is None:
-            raise RuntimeError("No window has been bound to Column.")
+            raise errors.UnboundWindowError("No window has been bound to Column.")
         return self._window
 
 

@@ -7,6 +7,8 @@ import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from hexes import errors
+
 
 @dataclass
 class AbstractWindow(ABC):
@@ -115,7 +117,7 @@ class AbstractWindow(ABC):
     @property
     def win(self):
         if self._win is None:
-            raise ValueError("Window must be initialized before being accessed.")
+            raise errors.WindowNotInitializedError("Window must be initialized before being accessed.")
         return self._win
 
     def addstr(
@@ -145,11 +147,17 @@ class AbstractWindow(ABC):
                 x = self.right - max(len(s) for s in wrapped_str)
             else:
                 x = self.left
+        # vertical overflow
+        if y + len(wrapped_str) > self.height:
+            raise errors.InsufficientSpaceError()
         for i, row in enumerate(wrapped_str):
+            # horizontal overflow
+            if len(row) > self.width - x:
+                raise errors.InsufficientSpaceError()
             if attr is not None:
-                self.win.addstr(typing.cast(int, y) + i, x, row, attr)
+                self.win.addstr(y + i, x, row, attr)
             else:
-                self.win.addstr(typing.cast(int, y) + i, x, row)
+                self.win.addstr(y + i, x, row)
 
     @abstractmethod
     def refresh(self):
