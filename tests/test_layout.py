@@ -99,3 +99,35 @@ def test_insufficient_space():
     # does not fail - dynamic column gets width of 1
     layout.update(50, 31)
     assert check_dimensions(layout.rows[0].cols[1], 1, 50)
+
+
+def test_margins():
+    layout = Layout()
+    margin_layout = Layout()
+
+    # fmt: off
+    (layout
+        .row().subd()
+            .col(w()).col(w())
+        .row(w())
+    )
+    (margin_layout
+        .row(m=1).subd()
+            .col(w(), ml=1, mb=2).col(w(), mr=1)
+        .row(w(), mx=1, mt=3)
+    )
+    # fmt: on
+
+    height, width = 100, 100
+    layout.update(height, width)
+    margin_layout.update(height, width)
+
+    # unmargined layout takes up all available space
+    assert check_dimensions(layout.rows[0].cols[0], width / 2, height / 2)
+    assert check_dimensions(layout.rows[0].cols[1], width / 2, height / 2)
+    assert check_dimensions(layout.rows[1], width, height / 2)
+
+    # margined layout leaves gaps as defined by margins
+    assert check_dimensions(margin_layout.rows[0].cols[0], width / 2 - (2 + 1), height / 2 - (2 + 2))
+    assert check_dimensions(margin_layout.rows[0].cols[1], width / 2 - (2 + 1), height / 2 - (2 + 0))
+    assert check_dimensions(margin_layout.rows[1], width - 2, height / 2 - 3)
