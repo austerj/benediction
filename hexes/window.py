@@ -122,11 +122,15 @@ class AbstractWindow(ABC):
         self,
         y: int | typing.Literal["top", "middle", "bottom"],
         x: int | typing.Literal["left", "center", "right"],
-        str_: str,
+        str_: str | list[str],
         attr: int | None = None,
         width: int | None = None,
+        **wrap_kwargs,
     ):
-        wrapped_str = textwrap.wrap(str_, self.width if width is None else width)
+        if isinstance(str_, str):
+            wrapped_str = textwrap.wrap(str_, self.width if width is None else width, **wrap_kwargs)
+        else:
+            wrapped_str = str_
         if not isinstance(y, int):
             if y == "middle":
                 y = self.middle - math.ceil(len(wrapped_str) / 2) + 1
