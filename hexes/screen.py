@@ -8,6 +8,9 @@ class Screen:
     def __exit__(self, type, value, traceback) -> None:
         self._teardown()
 
+    def clear(self):
+        self.stdscr.clear()
+
     def refresh(self):
         self.stdscr.refresh()
 
@@ -24,12 +27,6 @@ class Screen:
             curses.start_color()
         except:
             pass
-        # hide cursor and enable default colors
-        curses.curs_set(0)
-        curses.use_default_colors()
-        # initial clear and refresh
-        self.stdscr.clear()
-        self.stdscr.refresh()
         return self
 
     def _teardown(self):
@@ -38,8 +35,6 @@ class Screen:
         curses.echo()
         curses.nocbreak()
         curses.endwin()
-        # reset cursor visibility
-        curses.curs_set(1)
 
     @property
     def stdscr(self):
