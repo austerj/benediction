@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from hexes.screen import Screen
 from hexes.window import AbstractWindow
 
 
@@ -168,7 +167,6 @@ class ColumnSubdivider:
 class Layout:
     """Partition screen into a responsive layout of nested rows and columns."""
 
-    screen: Screen
     # root layout column
     __col: Column = field(init=False)
 
@@ -179,9 +177,8 @@ class Layout:
         """Add new row with fixed or dynamic height."""
         return self.__col.row(window, height)
 
-    def update(self):
+    def update(self, height: int, width: int):
         """Update rows and columns of layout."""
-        height, width = self.screen.stdscr.getmaxyx()
         self.__col.update(0, 0, width, height)
 
     def refresh(self):
