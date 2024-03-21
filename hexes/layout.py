@@ -39,11 +39,11 @@ class Column:
     _margin_right: int = field(default=0, repr=False)
     _margin_bottom: int = field(default=0, repr=False)
 
-    def refresh(self):
+    def noutrefresh(self):
         if self._window:
-            self._window.refresh()
+            self._window.noutrefresh()
         for row in self._rows:
-            row.refresh()
+            row.noutrefresh()
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins
@@ -138,11 +138,11 @@ class Row:
     _margin_right: int = field(default=0, repr=False)
     _margin_bottom: int = field(default=0, repr=False)
 
-    def refresh(self):
+    def noutrefresh(self):
         if self._window:
-            self._window.refresh()
+            self._window.noutrefresh()
         for col in self._cols:
-            col.refresh()
+            col.noutrefresh()
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins
@@ -283,9 +283,9 @@ class Layout:
         """Update rows and columns of layout."""
         self.__col.update(0, 0, width, height)
 
-    def refresh(self):
+    def noutrefresh(self):
         """Refresh all windows in layout."""
-        self.__col.refresh()
+        self.__col.noutrefresh()
 
     @property
     def rows(self):

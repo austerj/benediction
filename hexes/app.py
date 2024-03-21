@@ -45,12 +45,12 @@ class Application(ABC):
         self.update_layout()
 
     def update_layout(self):
-        """Update layout and refresh application."""
+        """Update layout and clear screen."""
+        self.screen.clear()
+        self.screen.noutrefresh()
         height, width = self.screen.stdscr.getmaxyx()
         self.layout.update(height, width)
-        self.screen.clear()
-        self.screen.refresh()
-        self.refresh()
+        self.layout.noutrefresh()
 
     @abstractmethod
     def refresh(self):

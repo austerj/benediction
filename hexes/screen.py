@@ -11,8 +11,8 @@ class Screen:
     def clear(self):
         self.stdscr.clear()
 
-    def refresh(self):
-        self.stdscr.refresh()
+    def noutrefresh(self):
+        self.stdscr.noutrefresh()
 
     def getch(self):
         return self.stdscr.getch()

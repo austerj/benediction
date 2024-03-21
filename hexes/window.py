@@ -172,7 +172,7 @@ class AbstractWindow(ABC):
                 pass
 
     @abstractmethod
-    def refresh(self):
+    def noutrefresh(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -186,8 +186,8 @@ class AbstractWindow(ABC):
 
 @dataclass
 class Window(AbstractWindow):
-    def refresh(self):
-        self.win.refresh()
+    def noutrefresh(self):
+        self.win.noutrefresh()
         self.win.clear()
 
     def init(self, left: int, top: int, width: int, height: int):
@@ -216,8 +216,9 @@ class Pad(AbstractWindow):
             if self._content_width is None:
                 self._content_width = max(len(s) for s in self.content)
 
-    def refresh(self):
-        self.win.refresh(self.top_shift, self.left_shift, self.top, self.left, self.bottom, self.right)
+    def noutrefresh(self):
+        self.win.noutrefresh(self.top_shift, self.left_shift, self.top, self.left, self.bottom, self.right)
+        self.win.clear()
 
     def init(self, *args, **kwargs):
         # intrinsic pad size only depends on content size
