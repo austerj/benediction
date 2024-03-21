@@ -31,7 +31,7 @@ class Column:
 
     _parent: Row | Layout = field(repr=False)
     _window: AbstractWindow | None
-    width: int | None  # None for dynamic allocation of available space
+    width: int | float | None  # None or float for dynamic allocation of available space
     _rows: list[Row] = field(default_factory=list, init=False)
     # margins
     _margin_left: int = field(default=0, repr=False)
@@ -54,12 +54,22 @@ class Column:
 
         # track allocation of height
         top_ = top
-        n_free_rows = sum(row.height is None for row in self._rows)
-        free_height = height - sum(row.height if row.height is not None else 0 for row in self._rows)
-        free_rows_allocated = 0
+
+        # initialize dynamic height allocation
+        dynamic_height = height - sum(row.height if isinstance(row.height, int) else 0 for row in self._rows)
+        remaining_dynamic_height = dynamic_height
+        n_implicit_rows = sum(row.height is None for row in self._rows)
+        n_dynamic_rows = sum(not isinstance(row.height, int) for row in self._rows)
+        dynamic_rows_allocated = 0
+
+        # explicit and implicit ratios
+        explicit_ratio = sum(row.height if isinstance(row.height, float) else 0.0 for row in self._rows)
+        if not (0.0 <= explicit_ratio <= 1.0):
+            raise errors.InsufficientSpaceError("Cannot dynamically allocate more height than available.")
+        implicit_ratio = (1.0 - explicit_ratio) / n_implicit_rows if n_implicit_rows > 0 else 0.0
 
         # raise if unable to allocate at least 1 height unit per row
-        if free_height < n_free_rows:
+        if dynamic_height < n_dynamic_rows:
             raise errors.InsufficientSpaceError()
 
         if self._window:
@@ -67,22 +77,22 @@ class Column:
 
         # allocate height across rows
         for row in self._rows:
-            if row.height is None:
-                # assign all remaining free height if last free row
-                if free_rows_allocated == n_free_rows - 1:
-                    row_height = free_height
-                # else assign fraction of total free height if not the last free row
-                else:
-                    free_height_frac = free_height // (n_free_rows - free_rows_allocated)
-                    free_height -= free_height_frac
-                    row_height = free_height_frac
-                free_rows_allocated += 1
-            else:
+            if isinstance(row.height, int):
                 row_height = row.height
+            else:
+                # assign all remaining height if last dynamic row
+                if dynamic_rows_allocated == n_dynamic_rows - 1:
+                    row_height = remaining_dynamic_height
+                else:
+                    # else assign ratio of dynamic height
+                    row_ratio = implicit_ratio if row.height is None else row.height
+                    row_height = round(dynamic_height * row_ratio)
+                    remaining_dynamic_height -= row_height
+                dynamic_rows_allocated += 1
             row.update(left, top_, width, row_height)
             top_ += row_height
 
-    def row(self, window: AbstractWindow | None = None, height: int | None = None, **kwargs):
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Add new row with fixed or dynamic height."""
         if self._window:
             raise RuntimeError("Cannot split column with a window attached into rows.")
@@ -114,7 +124,7 @@ class Row:
 
     _parent: Column = field(repr=False)
     _window: AbstractWindow | None
-    height: int | None  # None for dynamic allocation of available space
+    height: int | float | None  # # None or float for dynamic allocation of available space
     _cols: list[Column] = field(default_factory=list, init=False)
     # margins
     _margin_left: int = field(default=0, repr=False)
@@ -137,12 +147,22 @@ class Row:
 
         # track allocation of width
         left_ = left
-        n_free_cols = sum(col.width is None for col in self._cols)
-        free_width = width - sum(col.width if col.width is not None else 0 for col in self._cols)
-        free_cols_allocated = 0
 
-        # raise if unable to allocate at least 1 width unit per col
-        if free_width < n_free_cols:
+        # initialize dynamic width allocation
+        dynamic_width = width - sum(col.width if isinstance(col.width, int) else 0 for col in self._cols)
+        remaining_dynamic_width = dynamic_width
+        n_implicit_cols = sum(col.width is None for col in self._cols)
+        n_dynamic_cols = sum(not isinstance(col.width, int) for col in self._cols)
+        dynamic_cols_allocated = 0
+
+        # explicit and implicit ratios
+        explicit_ratio = sum(col.width if isinstance(col.width, float) else 0.0 for col in self._cols)
+        if not (0.0 <= explicit_ratio <= 1.0):
+            raise errors.InsufficientSpaceError("Cannot dynamically allocate more width than available.")
+        implicit_ratio = (1.0 - explicit_ratio) / n_implicit_cols if n_implicit_cols > 0 else 0.0
+
+        # raise if unable to allocate at least 1 width unit per row
+        if dynamic_width < n_dynamic_cols:
             raise errors.InsufficientSpaceError()
 
         if self._window:
@@ -150,22 +170,22 @@ class Row:
 
         # allocate width across cols
         for col in self._cols:
-            if col.width is None:
-                # assign all remaining free width if last free col
-                if free_cols_allocated == n_free_cols - 1:
-                    col_width = free_width
-                # else assign fraction of total free width if not the last free col
-                else:
-                    free_width_frac = free_width // (n_free_cols - free_cols_allocated)
-                    free_width -= free_width_frac
-                    col_width = free_width_frac
-                free_cols_allocated += 1
-            else:
+            if isinstance(col.width, int):
                 col_width = col.width
+            else:
+                # assign all remaining width if last dynamic col
+                if dynamic_cols_allocated == n_dynamic_cols - 1:
+                    col_width = remaining_dynamic_width
+                else:
+                    # else assign ratio of dynamic width
+                    col_ratio = implicit_ratio if col.width is None else col.width
+                    col_width = round(dynamic_width * col_ratio)
+                    remaining_dynamic_width -= col_width
+                dynamic_cols_allocated += 1
             col.update(left_, top, col_width, height)
             left_ += col_width
 
-    def col(self, window: AbstractWindow | None = None, width: int | None = None, **kwargs):
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         """Add new column with fixed or dynamic width."""
         if self._window:
             raise RuntimeError("Cannot split row with a window attached into columns.")
@@ -195,13 +215,13 @@ class RowSubdivider:
     _row: Row
     _col: Column | None = field(default=None, init=False)
 
-    def col(self, window: AbstractWindow | None = None, width: int | None = None, **kwargs):
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         """Add new column with fixed or dynamic width."""
         new_col = self._row.col(window, width, **kwargs)
         self._col = new_col
         return self
 
-    def row(self, window: AbstractWindow | None = None, height: int | None = None, **kwargs):
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Add new row with fixed or dynamic height."""
         return self.parent.row(window, height, **kwargs)
 
@@ -218,11 +238,11 @@ class ColumnSubdivider:
     _col: Column
     _row: Row | None = field(default=None, init=False)
 
-    def col(self, window: AbstractWindow | None = None, width: int | None = None, **kwargs):
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         """Add new column with fixed or dynamic width."""
         return self.parent.col(window, width, **kwargs)
 
-    def row(self, window: AbstractWindow | None = None, height: int | None = None, **kwargs):
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Add new row with fixed or dynamic height."""
         new_row = self._col.row(window, height, **kwargs)
         self._row = new_row
@@ -245,7 +265,7 @@ class Layout:
     def __post_init__(self):
         self.__col = Column(self, None, None)
 
-    def row(self, window: AbstractWindow | None = None, height: int | None = None, **kwargs):
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Add new row with fixed or dynamic height."""
         return self.__col.row(window, height, **kwargs)
 
