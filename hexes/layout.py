@@ -92,6 +92,12 @@ class Column:
             row.update(left, top_, width, row_height)
             top_ += row_height
 
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
+        """Add new column with fixed or dynamic height."""
+        if isinstance(self._parent, Layout):
+            raise TypeError("Cannot add columns to root layout.")
+        return self._parent.col(window, width, **kwargs)
+
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Add new row with fixed or dynamic height."""
         if self._window:
@@ -185,6 +191,10 @@ class Row:
             col.update(left_, top, col_width, height)
             left_ += col_width
 
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
+        """Add new row with fixed or dynamic height."""
+        return self._parent.row(window, height, **kwargs)
+
     def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         """Add new column with fixed or dynamic width."""
         if self._window:
@@ -266,7 +276,7 @@ class Layout:
         self.__col = Column(self, None, None)
 
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
-        """Add new row with fixed or dynamic height."""
+        """Subdivide layout into rows via chained methods."""
         return self.__col.row(window, height, **kwargs)
 
     def update(self, height: int, width: int):
