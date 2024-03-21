@@ -7,9 +7,7 @@ from hexes.window import Window
 
 def check_dimensions(item: Row | Column, width: int | float, height: int | float):
     # allowing off-by-one error due to truncation (e.g. 33-33-34 for three windows in 100 width)
-    if (window := item.window) is None:
-        raise TypeError
-    return width - 1 <= window.width <= width + 1 and height - 1 <= window.height <= height + 1
+    return width - 1 <= item.window.width <= width + 1 and height - 1 <= item.window.height <= height + 1
 
 
 def w():

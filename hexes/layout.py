@@ -30,7 +30,7 @@ class Column:
     """Layout column."""
 
     _parent: Row | Layout = field(repr=False)
-    window: AbstractWindow | None
+    _window: AbstractWindow | None
     width: int | None  # None for dynamic allocation of available space
     _rows: list[Row] = field(default_factory=list, init=False)
     # margins
@@ -40,8 +40,8 @@ class Column:
     _margin_bottom: int = field(default=0, repr=False)
 
     def refresh(self):
-        if self.window:
-            self.window.refresh()
+        if self._window:
+            self._window.refresh()
         for row in self._rows:
             row.refresh()
 
@@ -62,8 +62,8 @@ class Column:
         if free_height < n_free_rows:
             raise errors.InsufficientSpaceError()
 
-        if self.window:
-            self.window.set_dimensions(left, top, width, height)
+        if self._window:
+            self._window.set_dimensions(left, top, width, height)
 
         # allocate height across rows
         for row in self._rows:
@@ -84,7 +84,7 @@ class Column:
 
     def row(self, window: AbstractWindow | None = None, height: int | None = None, **kwargs):
         """Add new row with fixed or dynamic height."""
-        if self.window:
+        if self._window:
             raise RuntimeError("Cannot split column with a window attached into rows.")
         new_row = Row(self, window, height, **_compute_margins(**kwargs))
         self._rows.append(new_row)
@@ -101,13 +101,19 @@ class Column:
         """Rows nested in column."""
         return self._rows
 
+    @property
+    def window(self):
+        if self._window is None:
+            raise RuntimeError("No window has been bound to Column.")
+        return self._window
+
 
 @dataclass
 class Row:
     """Layout row."""
 
     _parent: Column = field(repr=False)
-    window: AbstractWindow | None
+    _window: AbstractWindow | None
     height: int | None  # None for dynamic allocation of available space
     _cols: list[Column] = field(default_factory=list, init=False)
     # margins
@@ -117,8 +123,8 @@ class Row:
     _margin_bottom: int = field(default=0, repr=False)
 
     def refresh(self):
-        if self.window:
-            self.window.refresh()
+        if self._window:
+            self._window.refresh()
         for col in self._cols:
             col.refresh()
 
@@ -139,8 +145,8 @@ class Row:
         if free_width < n_free_cols:
             raise errors.InsufficientSpaceError()
 
-        if self.window:
-            self.window.set_dimensions(left, top, width, height)
+        if self._window:
+            self._window.set_dimensions(left, top, width, height)
 
         # allocate width across cols
         for col in self._cols:
@@ -161,7 +167,7 @@ class Row:
 
     def col(self, window: AbstractWindow | None = None, width: int | None = None, **kwargs):
         """Add new column with fixed or dynamic width."""
-        if self.window:
+        if self._window:
             raise RuntimeError("Cannot split row with a window attached into columns.")
         new_col = Column(self, window, width, **_compute_margins(**kwargs))
         self._cols.append(new_col)
@@ -175,6 +181,12 @@ class Row:
     def cols(self):
         """Columns nested in row."""
         return self._cols
+
+    @property
+    def window(self):
+        if self._window is None:
+            raise RuntimeError("No window has been bound to Column.")
+        return self._window
 
 
 @dataclass
