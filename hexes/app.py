@@ -15,19 +15,22 @@ class Application(ABC):
     running: bool | None = field(default=None, init=False)
 
     def run(self):
+        """Run application."""
         if not self.running is None:
             raise RuntimeError("Application has already been run.")
         try:
             self.running = True
-            self.layout = Layout(self.screen)
+            self.layout = Layout()
             with self.screen as _:
                 self.setup()
-                self.layout.update()
+                self.update_layout()
                 self.main()
         finally:
             self.running = False
 
     def main(self):
+        """Main application refresh loop."""
+        # initial app refresh
         self.refresh()
         while self.running:
             if (ch := self.screen.getch()) == curses.KEY_RESIZE:
@@ -35,22 +38,31 @@ class Application(ABC):
                 self.on_resize()
             else:
                 self.on_ch(ch)
-            # refresh
+            # main loop app refresh
             self.refresh()
 
     def on_resize(self):
-        self.layout.update()
+        self.update_layout()
+
+    def update_layout(self):
+        """Update layout and refresh application."""
+        height, width = self.screen.stdscr.getmaxyx()
+        self.layout.update(height, width)
+        self.screen.clear()
         self.screen.refresh()
         self.refresh()
 
     @abstractmethod
     def refresh(self):
+        """Refresh based on current application state."""
         raise NotImplementedError
 
     @abstractmethod
     def setup(self):
+        """Application state setup prior to main refresh loop."""
         raise NotImplementedError
 
     @abstractmethod
     def on_ch(self, ch: int | None):
+        """Respond to character press (e.g. update internal state of application.)"""
         raise NotImplementedError
