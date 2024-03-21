@@ -61,6 +61,11 @@ class Column:
             raise TypeError("Cannot subdivide root column.")
         return ColumnSubdivider(self._parent, self)
 
+    @property
+    def rows(self):
+        """Rows nested in column."""
+        return self._rows
+
 
 @dataclass
 class Row:
@@ -115,6 +120,11 @@ class Row:
     def subd(self):
         """Subdivide row into columns via chained methods."""
         return RowSubdivider(self._parent, self)
+
+    @property
+    def cols(self):
+        """Columns nested in row."""
+        return self._cols
 
 
 @dataclass
@@ -184,3 +194,8 @@ class Layout:
     def refresh(self):
         """Refresh all windows in layout."""
         self.__col.refresh()
+
+    @property
+    def rows(self):
+        """Rows of root layout."""
+        return self.__col.rows
