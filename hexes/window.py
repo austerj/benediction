@@ -127,6 +127,7 @@ class AbstractWindow(ABC):
         str_: str | list[str],
         attr: int | None = None,
         width: int | None = None,
+        clip_overflow: bool = True,
         **wrap_kwargs,
     ):
         if isinstance(str_, str):
@@ -144,20 +145,31 @@ class AbstractWindow(ABC):
             if x == "center":
                 x = self.center - math.ceil(max(len(s) for s in wrapped_str) / 2) + 1
             elif x == "right":
-                x = self.right - max(len(s) for s in wrapped_str)
+                x = self.right - max(len(s) for s in wrapped_str) + 1
             else:
                 x = self.left
+        if clip_overflow:
+            # subset to rows that fit within window
+            wrapped_str = wrapped_str[: self.height - y]
         # vertical overflow
         if y + len(wrapped_str) > self.height:
             raise errors.InsufficientSpaceError()
         for i, row in enumerate(wrapped_str):
+            if clip_overflow:
+                # subset to chars that fit within window
+                row = row[: self.width - x]
             # horizontal overflow
             if len(row) > self.width - x:
                 raise errors.InsufficientSpaceError()
-            if attr is not None:
-                self.win.addstr(y + i, x, row, attr)
-            else:
-                self.win.addstr(y + i, x, row)
+            # NOTE: suppressing curses error due to exception when printing to bottom right corner
+            # see https://github.com/python/cpython/issues/52490
+            try:
+                if attr is not None:
+                    self.win.addstr(y + i, x, row, attr)
+                else:
+                    self.win.addstr(y + i, x, row)
+            except curses.error:
+                pass
 
     @abstractmethod
     def refresh(self):
