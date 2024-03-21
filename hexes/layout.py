@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from hexes import errors
 from hexes.window import AbstractWindow
 
 
@@ -21,14 +22,18 @@ class Column:
             row.refresh()
 
     def update(self, left: int, top: int, width: int, height: int):
-        if self.window:
-            self.window.set_dimensions(left, top, width, height)
-
         # track allocation of height
         top_ = top
         n_free_rows = sum(row.height is None for row in self._rows)
         free_height = height - sum(row.height if row.height is not None else 0 for row in self._rows)
         free_rows_allocated = 0
+
+        # raise if unable to allocate at least 1 height unit per row
+        if free_height < n_free_rows:
+            raise errors.InsufficientSpaceError()
+
+        if self.window:
+            self.window.set_dimensions(left, top, width, height)
 
         # allocate height across rows
         for row in self._rows:
@@ -83,14 +88,18 @@ class Row:
             col.refresh()
 
     def update(self, left: int, top: int, width: int, height: int):
-        if self.window:
-            self.window.set_dimensions(left, top, width, height)
-
         # track allocation of width
         left_ = left
         n_free_cols = sum(col.width is None for col in self._cols)
         free_width = width - sum(col.width if col.width is not None else 0 for col in self._cols)
         free_cols_allocated = 0
+
+        # raise if unable to allocate at least 1 width unit per col
+        if free_width < n_free_cols:
+            raise errors.InsufficientSpaceError()
+
+        if self.window:
+            self.window.set_dimensions(left, top, width, height)
 
         # allocate width across cols
         for col in self._cols:

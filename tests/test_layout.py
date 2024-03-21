@@ -1,3 +1,6 @@
+import pytest
+
+from hexes import errors
 from hexes.layout import Layout
 from hexes.window import AbstractWindow, Window
 
@@ -74,3 +77,24 @@ def test_dynamic_dimensions():
         r2_c1_r1_h = r2_h - r2_c1_r0_h
         assert check_dimensions(layout.rows[2].cols[1].rows[0].window, r2_c_w, r2_c1_r0_h)
         assert check_dimensions(layout.rows[2].cols[1].rows[1].window, r2_c_w, r2_c1_r1_h)
+
+
+def test_insufficient_space():
+    layout = Layout()
+
+    layout.row(height=50).subd().col(w(), width=30).col(w())
+
+    # fail: insufficient height
+    with pytest.raises(errors.InsufficientSpaceError):
+        layout.update(40, 40)
+
+    # fail: insufficient width
+    with pytest.raises(errors.InsufficientSpaceError):
+        layout.update(60, 20)
+
+    # still fails because dynamic column has no available space
+    with pytest.raises(errors.InsufficientSpaceError):
+        layout.update(50, 30)
+
+    # does not fail - dynamic column gets width of 1
+    layout.update(50, 31)
