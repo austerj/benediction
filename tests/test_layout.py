@@ -161,3 +161,16 @@ def test_margins():
     assert m_r1_w.abs_top == r1_w.abs_top + 3  # 3 from row mt=3
     assert m_r1_w.abs_right == r1_w.abs_right - 1  # 1 from row mx=1
     assert m_r1_w.abs_bottom == r1_w.abs_bottom  # no margin
+
+
+def test_dynamic_floats():
+    layout = Layout()
+
+    layout.row(w(), height=0.5).row(w(), height=0.2).row().subd().col(w(), width=0.4).col(w()).col(w())
+
+    layout.update(100, 100)
+    assert check_dimensions(layout.rows[0], 100, 50)
+    assert check_dimensions(layout.rows[1], 100, 20)
+    assert check_dimensions(layout.rows[2].cols[0], 40, 30)
+    assert check_dimensions(layout.rows[2].cols[1], 30, 30)
+    assert check_dimensions(layout.rows[2].cols[2], 30, 30)
