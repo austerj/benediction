@@ -1,13 +1,13 @@
 import pytest
 
 from hexes import errors
-from hexes.layout import Layout
-from hexes.window import AbstractWindow, Window
+from hexes.layout import Column, Layout, Row
+from hexes.window import Window
 
 
-def check_dimensions(window: AbstractWindow | None, width: int | float, height: int | float):
+def check_dimensions(item: Row | Column, width: int | float, height: int | float):
     # allowing off-by-one error due to truncation (e.g. 33-33-34 for three windows in 100 width)
-    if window is None:
+    if (window := item.window) is None:
         raise TypeError
     return width - 1 <= window.width <= width + 1 and height - 1 <= window.height <= height + 1
 
@@ -60,23 +60,23 @@ def test_dynamic_dimensions():
 
         # row0 cols
         r0_c_w = width / 2
-        assert check_dimensions(layout.rows[0].cols[0].window, r0_c_w, r0_h)
-        assert check_dimensions(layout.rows[0].cols[1].window, r0_c_w, r0_h)
+        assert check_dimensions(layout.rows[0].cols[0], r0_c_w, r0_h)
+        assert check_dimensions(layout.rows[0].cols[1], r0_c_w, r0_h)
         # row1 cols
-        assert check_dimensions(layout.rows[1].cols[0].window, r1_c0_w, r1_h)
+        assert check_dimensions(layout.rows[1].cols[0], r1_c0_w, r1_h)
         r1_c_w = (width - r1_c0_w) / 4
-        assert check_dimensions(layout.rows[1].cols[1].window, r1_c_w, r1_h)
-        assert check_dimensions(layout.rows[1].cols[2].window, r1_c_w, r1_h)
-        assert check_dimensions(layout.rows[1].cols[3].window, r1_c_w, r1_h)
-        assert check_dimensions(layout.rows[1].cols[4].window, r1_c_w, r1_h)
+        assert check_dimensions(layout.rows[1].cols[1], r1_c_w, r1_h)
+        assert check_dimensions(layout.rows[1].cols[2], r1_c_w, r1_h)
+        assert check_dimensions(layout.rows[1].cols[3], r1_c_w, r1_h)
+        assert check_dimensions(layout.rows[1].cols[4], r1_c_w, r1_h)
         # row2 cols
         r2_c_w = width / 2
         r2_h = height - (r0_h + r1_h)
-        assert check_dimensions(layout.rows[2].cols[0].window, r2_c_w, r2_h)
+        assert check_dimensions(layout.rows[2].cols[0], r2_c_w, r2_h)
         # row2,col1 rows
         r2_c1_r1_h = r2_h - r2_c1_r0_h
-        assert check_dimensions(layout.rows[2].cols[1].rows[0].window, r2_c_w, r2_c1_r0_h)
-        assert check_dimensions(layout.rows[2].cols[1].rows[1].window, r2_c_w, r2_c1_r1_h)
+        assert check_dimensions(layout.rows[2].cols[1].rows[0], r2_c_w, r2_c1_r0_h)
+        assert check_dimensions(layout.rows[2].cols[1].rows[1], r2_c_w, r2_c1_r1_h)
 
 
 def test_insufficient_space():
@@ -98,3 +98,4 @@ def test_insufficient_space():
 
     # does not fail - dynamic column gets width of 1
     layout.update(50, 31)
+    assert check_dimensions(layout.rows[0].cols[1], 1, 50)
