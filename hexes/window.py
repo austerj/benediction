@@ -233,23 +233,24 @@ class AbstractWindow(ABC):
         x_shift: int = 0,
         clip_overflow_y: typing.Literal["inner", "outer", False] | None = None,
         clip_overflow_x: typing.Literal["inner", "outer", False] | None = None,
+        ignore_overflow: bool = False,
         wrap_width: int | None = None,
         **wrap_kwargs,
     ):
         """Add a (multi-line) string to the window."""
         # wrap text
         if isinstance(str_, str):
-            wrapped_str = textwrap.wrap(str_, self.width if wrap_width is None else wrap_width, **wrap_kwargs)
+            strs = textwrap.wrap(str_, self.width if wrap_width is None else wrap_width, **wrap_kwargs)
         else:
-            wrapped_str = str_
+            strs = str_
 
         # compute anchors
         y_anchor_ = _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](
-            wrapped_str
+            strs
         )
         x_anchor_ = _XANCHOR[
             x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
-        ](wrapped_str)
+        ](strs)
 
         # compute base coordinates
         y_: int = y if isinstance(y, int) else getattr(self, _YTOPROP[y]) + y_anchor_ + y_shift
@@ -263,6 +264,8 @@ class AbstractWindow(ABC):
         if clip_overflow_y:
             top_clip = max((self.top if clip_overflow_y == "inner" else self.top_outer) - y_, 0)
             bottom_clip = max((self.bottom if clip_overflow_y == "inner" else self.bottom_outer) - y_ + 1, 0)
+        elif not (ignore_overflow or (0 <= y_ <= self.height_outer - len(strs))):
+            raise errors.WindowOverflowError()
 
         # handle x overflow
         if clip_overflow_x is None:
@@ -272,13 +275,15 @@ class AbstractWindow(ABC):
         if clip_overflow_x:
             left_clip = max((self.left if clip_overflow_x == "inner" else self.left_outer) - x_, 0)
             right_clip = max((self.right if clip_overflow_x == "inner" else self.right_outer) - x_ + 1, 0)
+        elif not (ignore_overflow or 0 <= x_ <= self.width_outer - max(len(s) for s in strs)):
+            raise errors.WindowOverflowError()
 
         # shift base coordinates by overflow
         y_ += top_clip
         x_ += left_clip
 
         # add row by row from y_ and down
-        for i, row in enumerate(wrapped_str[top_clip:bottom_clip]):
+        for i, row in enumerate(strs[top_clip:bottom_clip]):
             # NOTE: suppressing curses error due to exception when printing to bottom right corner
             # see https://github.com/python/cpython/issues/52490
             try:

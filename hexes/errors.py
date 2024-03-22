@@ -9,6 +9,10 @@ class InsufficientSpaceError(HexesError):
     ...
 
 
+class WindowOverflowError(HexesError):
+    ...
+
+
 class WindowNotInitializedError(HexesError):
     ...
 
