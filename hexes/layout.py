@@ -318,9 +318,9 @@ class Layout:
         """Subdivide layout into rows via chained methods."""
         return self.__col.row(window, height, **kwargs)
 
-    def update(self, height: int, width: int):
+    def update(self, left: int, top: int, height: int, width: int):
         """Update rows and columns of layout."""
-        self.__col.update(0, 0, width, height)
+        self.__col.update(left, top, width, height)
 
     def noutrefresh(self):
         """Refresh all windows in layout."""

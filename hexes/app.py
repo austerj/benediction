@@ -49,7 +49,7 @@ class Application(ABC):
         self.screen.clear()
         self.screen.noutrefresh()
         height, width = self.screen.stdscr.getmaxyx()
-        self.layout.update(height, width)
+        self.layout.update(0, 0, height, width)
         self.layout.noutrefresh()
 
     @abstractmethod
