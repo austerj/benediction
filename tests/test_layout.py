@@ -7,7 +7,7 @@ from hexes.window import Window
 
 def check_dimensions(item: Row | Column, width: int | float, height: int | float):
     # allowing off-by-one error due to truncation (e.g. 33-33-34 for three windows in 100 width)
-    return width - 1 <= item.window.abs_width <= width + 1 and height - 1 <= item.window.abs_height <= height + 1
+    return width - 1 <= item.window.width_outer <= width + 1 and height - 1 <= item.window.height_outer <= height + 1
 
 
 def w():
@@ -126,20 +126,20 @@ def test_margins():
     assert check_dimensions(layout.rows[1], width, height / 2)
     # positions match borders of available space
     r0_c0_w = layout.rows[0].cols[0].window
-    assert r0_c0_w.abs_left == 0
-    assert r0_c0_w.abs_top == 0
-    assert r0_c0_w.abs_right == r0_c0_w.abs_width - 1
-    assert r0_c0_w.abs_bottom == r0_c0_w.abs_height - 1
+    assert r0_c0_w.left_abs == 0
+    assert r0_c0_w.top_abs == 0
+    assert r0_c0_w.right_abs == r0_c0_w.width_outer - 1
+    assert r0_c0_w.bottom_abs == r0_c0_w.height_outer - 1
     r0_c1_w = layout.rows[0].cols[1].window
-    assert r0_c1_w.abs_left == r0_c0_w.abs_width
-    assert r0_c1_w.abs_top == 0
-    assert r0_c1_w.abs_right == r0_c0_w.abs_width + r0_c1_w.abs_width - 1
-    assert r0_c1_w.abs_bottom == r0_c1_w.abs_height - 1
+    assert r0_c1_w.left_abs == r0_c0_w.width_outer
+    assert r0_c1_w.top_abs == 0
+    assert r0_c1_w.right_abs == r0_c0_w.width_outer + r0_c1_w.width_outer - 1
+    assert r0_c1_w.bottom_abs == r0_c1_w.height_outer - 1
     r1_w = layout.rows[1].window
-    assert r1_w.abs_left == 0
-    assert r1_w.abs_top == r0_c1_w.abs_height
-    assert r1_w.abs_right == width - 1
-    assert r1_w.abs_bottom == height - 1
+    assert r1_w.left_abs == 0
+    assert r1_w.top_abs == r0_c1_w.height_outer
+    assert r1_w.right_abs == width - 1
+    assert r1_w.bottom_abs == height - 1
 
     # margined layout leaves gaps as defined by margins
     assert check_dimensions(margin_layout.rows[0].cols[0], width / 2 - (2 + 1), height / 2 - (2 + 2))
@@ -147,20 +147,20 @@ def test_margins():
     assert check_dimensions(margin_layout.rows[1], width - 2, height / 2 - 3)
     # positions match borders of margined space
     m_r0_c0_w = margin_layout.rows[0].cols[0].window
-    assert m_r0_c0_w.abs_left == r0_c0_w.abs_left + (1 + 2)  # 1 from row m=1, 2 from ml=2
-    assert m_r0_c0_w.abs_top == r0_c0_w.abs_top + 1  # 1 from row m=1
-    assert m_r0_c0_w.abs_right == r0_c0_w.abs_right  # no margin
-    assert m_r0_c0_w.abs_bottom == r0_c0_w.abs_bottom - (1 + 2)  # 1 from row m=1, 2 from mb=2
+    assert m_r0_c0_w.left_abs == r0_c0_w.left_abs + (1 + 2)  # 1 from row m=1, 2 from ml=2
+    assert m_r0_c0_w.top_abs == r0_c0_w.top_abs + 1  # 1 from row m=1
+    assert m_r0_c0_w.right_abs == r0_c0_w.right_abs  # no margin
+    assert m_r0_c0_w.bottom_abs == r0_c0_w.bottom_abs - (1 + 2)  # 1 from row m=1, 2 from mb=2
     m_r0_c1_w = margin_layout.rows[0].cols[1].window
-    assert m_r0_c1_w.abs_left == r0_c1_w.abs_left  # no margin
-    assert m_r0_c1_w.abs_top == r0_c1_w.abs_top + 1  # 1 from row m=1
-    assert m_r0_c1_w.abs_right == r0_c1_w.abs_right - (1 + 4)  # 1 from row m=1, 4 from mr=4
-    assert m_r0_c1_w.abs_bottom == r0_c1_w.abs_bottom - 1  # 1 from row m=1
+    assert m_r0_c1_w.left_abs == r0_c1_w.left_abs  # no margin
+    assert m_r0_c1_w.top_abs == r0_c1_w.top_abs + 1  # 1 from row m=1
+    assert m_r0_c1_w.right_abs == r0_c1_w.right_abs - (1 + 4)  # 1 from row m=1, 4 from mr=4
+    assert m_r0_c1_w.bottom_abs == r0_c1_w.bottom_abs - 1  # 1 from row m=1
     m_r1_w = margin_layout.rows[1].window
-    assert m_r1_w.abs_left == r1_w.abs_left + 1  # 1 from mx=1
-    assert m_r1_w.abs_top == r1_w.abs_top + 3  # 3 from row mt=3
-    assert m_r1_w.abs_right == r1_w.abs_right - 1  # 1 from row mx=1
-    assert m_r1_w.abs_bottom == r1_w.abs_bottom  # no margin
+    assert m_r1_w.left_abs == r1_w.left_abs + 1  # 1 from mx=1
+    assert m_r1_w.top_abs == r1_w.top_abs + 3  # 3 from row mt=3
+    assert m_r1_w.right_abs == r1_w.right_abs - 1  # 1 from row mx=1
+    assert m_r1_w.bottom_abs == r1_w.bottom_abs  # no margin
 
 
 def test_dynamic_floats():

@@ -25,94 +25,126 @@ class AbstractWindow(ABC):
     __padding_right: int = field(default=0, init=False, repr=False)
     __padding_bottom: int = field(default=0, init=False, repr=False)
 
-    # absolute positions
+    # dimensions
     @property
-    def abs_width(self):
-        """Absolute width of window (ignoring padding)."""
+    def width_outer(self):
+        """Width of outer window (ignoring padding)."""
         if self.__width is None:
             raise ValueError("Width must be set before being accessed.")
         return self.__width
 
     @property
-    def abs_height(self):
-        """Absolute height of window (ignoring padding)."""
+    def height_outer(self):
+        """Height of outer window (ignoring padding)."""
         if self.__height is None:
             raise ValueError("Height must be set before being accessed.")
         return self.__height
 
     @property
-    def abs_top(self):
+    def width(self):
+        """Width of inner window (with padding)."""
+        return self.width_outer - (self.__padding_left + self.__padding_right)
+
+    @property
+    def height(self):
+        """Height of inner window (with padding)."""
+        return self.height_outer - (self.__padding_top + self.__padding_bottom)
+
+    # absolute positions
+    @property
+    def top_abs(self):
         """Top of window (y-coordinate, absolute)."""
         if self.__top is None:
             raise ValueError("Vertical offset must be set before being accessed.")
         return self.__top
 
     @property
-    def abs_middle(self):
+    def middle_abs(self):
         """Vertical middle of window (y-coordinate, absolute)."""
-        return (self.abs_bottom - self.abs_top) // 2
+        return (self.bottom_abs - self.top_abs) // 2
 
     @property
-    def abs_bottom(self):
+    def bottom_abs(self):
         """Bottom of window (y-coordinate, absolute)."""
-        return self.abs_top + self.abs_height - 1
+        return self.top_abs + self.height_outer - 1
 
     @property
-    def abs_left(self):
+    def left_abs(self):
         """Left of window (x-coordinate, absolute)."""
         if self.__left is None:
             raise ValueError("Horizontal offset must be set before being accessed.")
         return self.__left
 
     @property
-    def abs_center(self):
+    def center_abs(self):
         """Vertical center of window (x-coordinate, absolute)."""
-        return (self.abs_right - self.abs_left) // 2
+        return (self.right_abs - self.left_abs) // 2
 
     @property
-    def abs_right(self):
+    def right_abs(self):
         """Right of window (x-coordinate, absolute)."""
-        return self.abs_left + self.abs_width - 1
+        return self.left_abs + self.width_outer - 1
 
-    # relative positions
+    # outer relative positions
     @property
-    def width(self):
-        """Width of window (with padding)."""
-        return self.abs_width - (self.__padding_left + self.__padding_right)
+    def top_outer(self):
+        """Top of window (y-coordinate, relative unpadded)."""
+        return 0
 
     @property
-    def height(self):
-        """Height of window (with padding)."""
-        return self.abs_height - (self.__padding_top + self.__padding_bottom)
+    def middle_outer(self):
+        """Vertical middle of window (y-coordinate, relative unpadded)."""
+        return self.height_outer // 2
 
+    @property
+    def bottom_outer(self):
+        """Bottom of window (y-coordinate, relative unpadded)."""
+        return self.height_outer - 1
+
+    @property
+    def left_outer(self):
+        """Left of window (x-coordinate, relative unpadded)."""
+        return 0
+
+    @property
+    def center_outer(self):
+        """Vertical center of window (x-coordinate, relative unpadded)."""
+        return self.right_outer // 2
+
+    @property
+    def right_outer(self):
+        """Right of window (x-coordinate, relative unpadded)."""
+        return self.width_outer - 1
+
+    # padded relative positions
     @property
     def top(self):
-        """Top of window (y-coordinate, relative)."""
+        """Top of window (y-coordinate, relative padded)."""
         return self.__padding_top
 
     @property
     def middle(self):
-        """Vertical middle of window (y-coordinate, relative)."""
-        return (self.bottom - self.top) // 2
+        """Vertical middle of window (y-coordinate, relative padded)."""
+        return (self.bottom + self.top) // 2
 
     @property
     def bottom(self):
-        """Bottom of window (y-coordinate, relative)."""
+        """Bottom of window (y-coordinate, relative padded)."""
         return self.top + self.height - 1
 
     @property
     def left(self):
-        """Left of window (x-coordinate, relative)."""
+        """Left of window (x-coordinate, relative padded)."""
         return self.__padding_left
 
     @property
     def center(self):
-        """Vertical center of window (x-coordinate, relative)."""
-        return (self.right - self.left) // 2
+        """Vertical center of window (x-coordinate, relative padded)."""
+        return (self.right + self.left) // 2
 
     @property
     def right(self):
-        """Right of window (x-coordinate, relative)."""
+        """Right of window (x-coordinate, relative padded)."""
         return self.left + self.width - 1
 
     def set_dimensions(
