@@ -9,6 +9,26 @@ from dataclasses import dataclass, field
 
 from hexes import errors
 
+# map anchor to coordinate via window and string list
+HorizontalAnchor = typing.Literal["left", "center", "right", "left-outer", "center-outer", "right-outer"]
+VerticalAnchor = typing.Literal["top", "middle", "bottom", "top-outer", "middle-outer", "bottom-outer"]
+_XAnchor: dict[HorizontalAnchor, typing.Callable[[AbstractWindow, list[str]], int]] = {
+    "left": lambda w, strs: w.left,
+    "left-outer": lambda w, strs: w.left_outer,
+    "center": lambda w, strs: w.center - math.ceil(max(len(s) for s in strs) / 2) + 1,
+    "center-outer": lambda w, strs: w.center_outer - math.ceil(max(len(s) for s in strs) / 2) + 1,
+    "right": lambda w, strs: w.right - max(len(s) for s in strs) + 1,
+    "right-outer": lambda w, strs: w.right_outer - max(len(s) for s in strs) + 1,
+}
+_YAnchor: dict[VerticalAnchor, typing.Callable[[AbstractWindow, list[str]], int]] = {
+    "top": lambda w, strs: w.top,
+    "top-outer": lambda w, strs: w.top_outer,
+    "middle": lambda w, strs: w.middle - math.ceil(len(strs) / 2) + 1,
+    "middle-outer": lambda w, strs: w.middle_outer - math.ceil(len(strs) / 2) + 1,
+    "bottom": lambda w, strs: w.bottom - len(strs) + 1,
+    "bottom-outer": lambda w, strs: w.bottom_outer - len(strs) + 1,
+}
+
 
 @dataclass
 class AbstractWindow(ABC):
@@ -241,6 +261,35 @@ class AbstractWindow(ABC):
                     self.win.addstr(y + i, x, row, attr)
                 else:
                     self.win.addstr(y + i, x, row)
+            except curses.error:
+                pass
+
+    # NOTE: WIP implementation to replace addstr
+    def _addstr(
+        self,
+        str_: str | list[str],
+        attr: int | None = None,
+        y: int = 0,
+        x: int = 0,
+        y_anchor: VerticalAnchor = "top",
+        x_anchor: HorizontalAnchor = "left",
+        width: int | None = None,
+        **wrap_kwargs,
+    ):
+        if isinstance(str_, str):
+            wrapped_str = textwrap.wrap(str_, self.width if width is None else width, **wrap_kwargs)
+        else:
+            wrapped_str = str_
+        y_ = _YAnchor[y_anchor](self, wrapped_str) + y
+        x_ = _XAnchor[x_anchor](self, wrapped_str) + x
+        for i, row in enumerate(wrapped_str):
+            # NOTE: suppressing curses error due to exception when printing to bottom right corner
+            # see https://github.com/python/cpython/issues/52490
+            try:
+                if attr is not None:
+                    self.win.addstr(y_ + i, x_, row, attr)
+                else:
+                    self.win.addstr(x_ + i, x_, row)
             except curses.error:
                 pass
 
