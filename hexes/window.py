@@ -223,68 +223,6 @@ class AbstractWindow(ABC):
 
     def addstr(
         self,
-        y: int | typing.Literal["top", "middle", "bottom"],
-        x: int | typing.Literal["left", "center", "right"],
-        str_: str | list[str],
-        attr: int | None = None,
-        width: int | None = None,
-        clip_overflow: bool = True,
-        overflow_padding: bool = False,
-        **wrap_kwargs,
-    ):
-        w_width = self.abs_width if overflow_padding else self.width
-        w_height = self.abs_height if overflow_padding else self.height
-        if isinstance(str_, str):
-            wrapped_str = textwrap.wrap(str_, w_width if width is None else width, **wrap_kwargs)
-        else:
-            wrapped_str = str_
-        if not isinstance(y, int):
-            if y == "middle":
-                y = self.middle - math.ceil(len(wrapped_str) / 2) + 1
-            elif y == "top":
-                y = self.top
-            elif y == "bottom":
-                y = self.bottom - len(wrapped_str) + 1
-        if not isinstance(x, int):
-            if x == "center":
-                x = self.center - math.ceil(max(len(s) for s in wrapped_str) / 2) + 1
-            elif x == "right":
-                x = self.right - max(len(s) for s in wrapped_str) + 1
-            else:
-                x = self.left
-        if clip_overflow:
-            # subset to rows that fit within window
-            wrapped_str = wrapped_str[: w_height - y]
-            # t_overflow = 0 if overflow_padding else max(self.top - y, 0)
-            # b_overflow = (self.abs_bottom if overflow_padding else self.bottom) - x
-            # wrapped_str = wrapped_str[t_overflow: b_overflow]
-        # vertical overflow
-        if y + len(wrapped_str) > w_height:
-            raise errors.InsufficientSpaceError()
-        for i, row in enumerate(wrapped_str):
-            if clip_overflow:
-                # subset to chars that fit within window
-                l_overflow = 0 if overflow_padding else max(self.left - x, 0)
-                r_overflow = (self.abs_right if overflow_padding else self.right) - x + 1
-                row = row[l_overflow:r_overflow]
-            # horizontal overflow
-            if (not overflow_padding and (len(row) > self.right - x + 1 or x < self.left)) or len(
-                row
-            ) > self.abs_right - x + 1:
-                raise errors.InsufficientSpaceError()
-            # NOTE: suppressing curses error due to exception when printing to bottom right corner
-            # see https://github.com/python/cpython/issues/52490
-            try:
-                if attr is not None:
-                    self.win.addstr(y + i, x, row, attr)
-                else:
-                    self.win.addstr(y + i, x, row)
-            except curses.error:
-                pass
-
-    # NOTE: WIP implementation to replace addstr
-    def _addstr(
-        self,
         str_: str | list[str],
         attr: int | None = None,
         y: int | VerticalPosition = "top",
@@ -298,6 +236,7 @@ class AbstractWindow(ABC):
         wrap_width: int | None = None,
         **wrap_kwargs,
     ):
+        """Add a (multi-line) string to the window."""
         # wrap text
         if isinstance(str_, str):
             wrapped_str = textwrap.wrap(str_, self.width if wrap_width is None else wrap_width, **wrap_kwargs)
