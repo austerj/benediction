@@ -174,3 +174,33 @@ def test_dynamic_floats():
     assert check_dimensions(layout.rows[2].cols[0], 40, 30)
     assert check_dimensions(layout.rows[2].cols[1], 30, 30)
     assert check_dimensions(layout.rows[2].cols[2], 30, 30)
+
+
+def test_padding():
+    layout = Layout()
+    padded_layout = Layout()
+
+    layout.row(w())
+    padded_layout.row(w(), p=1, pr=2)
+
+    layout.update(100, 100)
+    padded_layout.update(100, 100)
+
+    row = layout.rows[0]
+    padded_row = padded_layout.rows[0]
+
+    # padding does not change window dimensions
+    assert check_dimensions(row, 100, 100)
+    assert check_dimensions(padded_row, 100, 100)
+
+    # regular row window has relative positions in corners of screen
+    assert row.window.left == 0
+    assert row.window.top == 0
+    assert row.window.right == 99
+    assert row.window.bottom == 99
+
+    # padded row window shifts relative positions
+    assert padded_row.window.left == 1
+    assert padded_row.window.top == 1
+    assert padded_row.window.right == 97
+    assert padded_row.window.bottom == 98
