@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 
 from hexes import errors
@@ -40,29 +41,64 @@ def _map_kwargs(
 
 
 @dataclass
-class Column:
-    """Layout column."""
-
-    _parent: Row | Layout = field(repr=False)
+class LayoutItem(ABC):
+    _parent: LayoutItem | Layout
     _window: AbstractWindow | None
-    width: int | float | None  # None or float for dynamic allocation of available space
-    _rows: list[Row] = field(default_factory=list, init=False)
     # margins
-    _margin_left: int = field(default=0, repr=False)
-    _margin_top: int = field(default=0, repr=False)
-    _margin_right: int = field(default=0, repr=False)
-    _margin_bottom: int = field(default=0, repr=False)
+    _margin_left: int = field(default=0, repr=False, kw_only=True)
+    _margin_top: int = field(default=0, repr=False, kw_only=True)
+    _margin_right: int = field(default=0, repr=False, kw_only=True)
+    _margin_bottom: int = field(default=0, repr=False, kw_only=True)
     # padding
-    _padding_left: int = field(default=0, repr=False)
-    _padding_top: int = field(default=0, repr=False)
-    _padding_right: int = field(default=0, repr=False)
-    _padding_bottom: int = field(default=0, repr=False)
+    _padding_left: int = field(default=0, repr=False, kw_only=True)
+    _padding_top: int = field(default=0, repr=False, kw_only=True)
+    _padding_right: int = field(default=0, repr=False, kw_only=True)
+    _padding_bottom: int = field(default=0, repr=False, kw_only=True)
+
+    @property
+    def window(self):
+        if self._window is None:
+            raise errors.UnboundWindowError(f"No window has been bound to {self.__class__.__name__}.")
+        return self._window
 
     def noutrefresh(self):
         if self._window:
             self._window.noutrefresh()
-        for row in self._rows:
-            row.noutrefresh()
+        for item in self._items:
+            item.noutrefresh()
+
+    @abstractproperty
+    def _items(self) -> list[LayoutItem]:
+        """Nested layout items."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def update(self, left: int, top: int, width: int, height: int):
+        """Update all nested layout items."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
+        """Add new column with fixed or dynamic height."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
+        """Add new row with fixed or dynamic height."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def subd(self):
+        raise NotImplementedError
+
+
+@dataclass
+class Column(LayoutItem):
+    """Layout column."""
+
+    _parent: Row | Layout = field(repr=False)
+    width: int | float | None  # None or float for dynamic allocation of available space
+    _rows: list[Row] = field(default_factory=list, init=False)
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins
@@ -121,13 +157,11 @@ class Column:
             top_ += row_height
 
     def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
-        """Add new column with fixed or dynamic height."""
         if isinstance(self._parent, Layout):
             raise TypeError("Cannot add columns to root layout.")
         return self._parent.col(window, width, **kwargs)
 
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
-        """Add new row with fixed or dynamic height."""
         if self._window:
             raise RuntimeError("Cannot split column with a window attached into rows.")
         new_row = Row(self, window, height, **_map_kwargs(**kwargs))
@@ -146,36 +180,17 @@ class Column:
         return self._rows
 
     @property
-    def window(self):
-        if self._window is None:
-            raise errors.UnboundWindowError("No window has been bound to Column.")
-        return self._window
+    def _items(self):
+        return self._rows
 
 
 @dataclass
-class Row:
+class Row(LayoutItem):
     """Layout row."""
 
-    _parent: Column | Layout = field(repr=False)
-    _window: AbstractWindow | None
-    height: int | float | None  # # None or float for dynamic allocation of available space
+    _parent: Column | Layout
+    height: int | float | None  # None or float for dynamic allocation of available space
     _cols: list[Column] = field(default_factory=list, init=False)
-    # margins
-    _margin_left: int = field(default=0, repr=False)
-    _margin_top: int = field(default=0, repr=False)
-    _margin_right: int = field(default=0, repr=False)
-    _margin_bottom: int = field(default=0, repr=False)
-    # padding
-    _padding_left: int = field(default=0, repr=False)
-    _padding_top: int = field(default=0, repr=False)
-    _padding_right: int = field(default=0, repr=False)
-    _padding_bottom: int = field(default=0, repr=False)
-
-    def noutrefresh(self):
-        if self._window:
-            self._window.noutrefresh()
-        for col in self._cols:
-            col.noutrefresh()
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins
@@ -234,11 +249,9 @@ class Row:
             left_ += col_width
 
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
-        """Add new row with fixed or dynamic height."""
         return self._parent.row(window, height, **kwargs)
 
     def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
-        """Add new column with fixed or dynamic width."""
         if self._window:
             raise RuntimeError("Cannot split row with a window attached into columns.")
         new_col = Column(self, window, width, **_map_kwargs(**kwargs))
@@ -257,10 +270,8 @@ class Row:
         return self._cols
 
     @property
-    def window(self):
-        if self._window is None:
-            raise errors.UnboundWindowError("No window has been bound to Column.")
-        return self._window
+    def _items(self):
+        return self._cols
 
 
 @dataclass
