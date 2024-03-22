@@ -307,15 +307,12 @@ class ColumnSubdivider:
         return RowSubdivider(self, self._row)
 
 
-@dataclass
 class Layout:
     """Partition screen into a responsive layout of nested rows and columns."""
 
-    # root layout column
-    __col: Column = field(init=False)
-
-    def __post_init__(self):
-        self.__col = Column(self, None, None)
+    def __init__(self, **kwargs):
+        # root layout column
+        self.__col = Column(self, None, None, **_map_kwargs(**kwargs))
 
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Subdivide layout into rows via chained methods."""
