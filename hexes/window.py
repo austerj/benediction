@@ -43,6 +43,10 @@ _YDEFAULTANCHOR: dict[VerticalPosition, VerticalAnchor] = {
     "bottom-outer": "bottom",
 }
 
+# match positions to property names
+_XTOPROP: dict[HorizontalPosition, str] = {key: key.replace("-", "_") for key in _XDEFAULTANCHOR.keys()}
+_YTOPROP: dict[VerticalPosition, str] = {key: key.replace("-", "_") for key in _YDEFAULTANCHOR.keys()}
+
 
 @dataclass
 class AbstractWindow(ABC):
@@ -309,9 +313,8 @@ class AbstractWindow(ABC):
         ](wrapped_str)
 
         # compute base coordinates
-        # TODO: replace string replace with dict lookup
-        y_: int = y if isinstance(y, int) else getattr(self, y.replace("-", "_")) + y_anchor_ + y_shift
-        x_: int = x if isinstance(x, int) else getattr(self, x.replace("-", "_")) + x_anchor_ + x_shift
+        y_: int = y if isinstance(y, int) else getattr(self, _YTOPROP[y]) + y_anchor_ + y_shift
+        x_: int = x if isinstance(x, int) else getattr(self, _XTOPROP[x]) + x_anchor_ + x_shift
 
         # handle y overflow
         if clip_overflow_y is None:
