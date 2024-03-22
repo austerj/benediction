@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 
 from hexes import errors
 
+OverflowBoundary = typing.Literal["inner", "outer"]
+
 # map string list to anchor value
 HorizontalAnchor = typing.Literal["left", "center", "right"]
 VerticalAnchor = typing.Literal["top", "middle", "bottom"]
@@ -221,6 +223,33 @@ class AbstractWindow(ABC):
             raise errors.WindowNotInitializedError("Window must be initialized before being accessed.")
         return self._win
 
+    def chgat(
+        self,
+        from_y: int | VerticalPosition,
+        from_x: int | HorizontalPosition,
+        to_y: int | VerticalPosition | None,
+        to_x: int | HorizontalPosition | None,
+        attr: int,
+        y_shift: int = 0,
+        x_shift: int = 0,
+        to_y_shift: int = 0,
+        to_x_shift: int = 0,
+    ):
+        """Set the attributes in a region."""
+        # get region
+        from_y_ = self.get_y(from_y) + y_shift
+        from_x_ = self.get_x(from_x) + x_shift
+        to_y_ = (from_y_ if to_y is None else self.get_y(to_y)) + to_y_shift
+        to_x_ = (from_x_ if to_x is None else self.get_x(to_x)) + to_x_shift
+
+        if self.y_overflows(from_y_, to_y_, boundary="outer") or self.x_overflows(from_x_, to_x_, boundary="outer"):
+            raise errors.WindowOverflowError
+
+        # apply attribute to each row of region
+        num = max(to_x_ - from_x_ + 1, 0)
+        for y in range(from_y_, to_y_ + 1):
+            self.win.chgat(y, from_x_, num, attr)
+
     def addstr(
         self,
         str_: str | list[str],
@@ -231,8 +260,8 @@ class AbstractWindow(ABC):
         x_anchor: HorizontalAnchor | None = None,
         y_shift: int = 0,
         x_shift: int = 0,
-        clip_overflow_y: typing.Literal["inner", "outer", False] | None = None,
-        clip_overflow_x: typing.Literal["inner", "outer", False] | None = None,
+        clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
+        clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         ignore_overflow: bool = False,
         wrap_width: int | None = None,
         **wrap_kwargs,
@@ -253,8 +282,8 @@ class AbstractWindow(ABC):
         ](strs)
 
         # compute base coordinates
-        y_: int = y if isinstance(y, int) else getattr(self, _YTOPROP[y]) + y_anchor_ + y_shift
-        x_: int = x if isinstance(x, int) else getattr(self, _XTOPROP[x]) + x_anchor_ + x_shift
+        y_: int = self.get_y(y) + y_anchor_ + y_shift
+        x_: int = self.get_x(x) + x_anchor_ + x_shift
 
         # handle y overflow
         if clip_overflow_y is None:
@@ -293,6 +322,26 @@ class AbstractWindow(ABC):
                     self.win.addstr(y_ + i, x_, row[left_clip:right_clip])
             except curses.error:
                 pass
+
+    def get_y(self, y: int | VerticalPosition):
+        return y if isinstance(y, int) else getattr(self, _YTOPROP[y])
+
+    def get_x(self, x: int | HorizontalPosition):
+        return x if isinstance(x, int) else getattr(self, _XTOPROP[x])
+
+    def y_overflows(self, *ys: int | VerticalPosition, boundary: OverflowBoundary = "inner"):
+        """Test if y overflows the inner or outer window boundary."""
+        if boundary == "inner":
+            return not all((self.top <= self.get_y(y) <= self.bottom) for y in ys)
+        else:
+            return not all((self.top_outer <= self.get_y(y) <= self.bottom_outer) for y in ys)
+
+    def x_overflows(self, *xs: int | HorizontalPosition, boundary: OverflowBoundary = "inner"):
+        """Test if x overflows the inner or outer window boundary."""
+        if boundary == "inner":
+            return not all((self.left <= self.get_x(x) <= self.right) for x in xs)
+        else:
+            return not all((self.left_outer <= self.get_x(x) <= self.right_outer) for x in xs)
 
     @abstractmethod
     def noutrefresh(self):
