@@ -289,15 +289,17 @@ class AbstractWindow(ABC):
         x_anchor: HorizontalAnchor | None = None,
         y_shift: int = 0,
         x_shift: int = 0,
+        clip_overflow_y: typing.Literal["inner", "outer", False] | None = None,
+        clip_overflow_x: typing.Literal["inner", "outer", False] | None = None,
         wrap_width: int | None = None,
         **wrap_kwargs,
     ):
-        # infer default padding overflow behavior from anchors
+        # wrap text
         if isinstance(str_, str):
-            # wrap text
             wrapped_str = textwrap.wrap(str_, self.width if wrap_width is None else wrap_width, **wrap_kwargs)
         else:
             wrapped_str = str_
+
         # compute anchors
         y_anchor_ = _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](
             wrapped_str
@@ -305,18 +307,43 @@ class AbstractWindow(ABC):
         x_anchor_ = _XANCHOR[
             x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
         ](wrapped_str)
-        # get base coordinates
+
+        # compute base coordinates
+        # TODO: replace string replace with dict lookup
         y_: int = y if isinstance(y, int) else getattr(self, y.replace("-", "_")) + y_anchor_ + y_shift
         x_: int = x if isinstance(x, int) else getattr(self, x.replace("-", "_")) + x_anchor_ + x_shift
+
+        # handle y overflow
+        if clip_overflow_y is None:
+            clip_overflow_y = False if isinstance(y, int) else "outer" if y.endswith("outer") else "inner"
+        top_clip = 0
+        bottom_clip = None
+        if clip_overflow_y:
+            top_clip = max((self.top if clip_overflow_y == "inner" else self.top_outer) - y_, 0)
+            bottom_clip = max((self.bottom if clip_overflow_y == "inner" else self.bottom_outer) - y_ + 1, 0)
+
+        # handle x overflow
+        if clip_overflow_x is None:
+            clip_overflow_x = False if isinstance(x, int) else "outer" if x.endswith("outer") else "inner"
+        left_clip = 0
+        right_clip = None
+        if clip_overflow_x:
+            left_clip = max((self.left if clip_overflow_x == "inner" else self.left_outer) - x_, 0)
+            right_clip = max((self.right if clip_overflow_x == "inner" else self.right_outer) - x_ + 1, 0)
+
+        # shift base coordinates by overflow
+        y_ += top_clip
+        x_ += left_clip
+
         # add row by row from y_ and down
-        for i, row in enumerate(wrapped_str):
+        for i, row in enumerate(wrapped_str[top_clip:bottom_clip]):
             # NOTE: suppressing curses error due to exception when printing to bottom right corner
             # see https://github.com/python/cpython/issues/52490
             try:
                 if attr is not None:
-                    self.win.addstr(y_ + i, x_, row, attr)
+                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip], attr)
                 else:
-                    self.win.addstr(y_ + i, x_, row)
+                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip])
             except curses.error:
                 pass
 
