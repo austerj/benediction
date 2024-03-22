@@ -20,20 +20,26 @@ class AbstractWindow(ABC):
     __height: int | None = field(default=None, init=False, repr=False)
     __left: int | None = field(default=None, init=False, repr=False)
     __top: int | None = field(default=None, init=False, repr=False)
+    __padding_left: int = field(default=0, init=False, repr=False)
+    __padding_top: int = field(default=0, init=False, repr=False)
+    __padding_right: int = field(default=0, init=False, repr=False)
+    __padding_bottom: int = field(default=0, init=False, repr=False)
 
+    # absolute positions
     @property
-    def width(self):
+    def abs_width(self):
+        """Absolute width of window (ignoring padding)."""
         if self.__width is None:
             raise ValueError("Width must be set before being accessed.")
         return self.__width
 
     @property
-    def height(self):
+    def abs_height(self):
+        """Absolute height of window (ignoring padding)."""
         if self.__height is None:
             raise ValueError("Height must be set before being accessed.")
         return self.__height
 
-    # absolute positions
     @property
     def abs_top(self):
         """Top of window (y-coordinate, absolute)."""
@@ -49,7 +55,7 @@ class AbstractWindow(ABC):
     @property
     def abs_bottom(self):
         """Bottom of window (y-coordinate, absolute)."""
-        return self.abs_top + self.height - 1
+        return self.abs_top + self.abs_height - 1
 
     @property
     def abs_left(self):
@@ -66,45 +72,70 @@ class AbstractWindow(ABC):
     @property
     def abs_right(self):
         """Right of window (x-coordinate, absolute)."""
-        return self.abs_left + self.width - 1
+        return self.abs_left + self.abs_width - 1
 
     # relative positions
     @property
+    def width(self):
+        """Width of window (with padding)."""
+        return self.abs_width - (self.__padding_left + self.__padding_right)
+
+    @property
+    def height(self):
+        """Height of window (with padding)."""
+        return self.abs_height - (self.__padding_top + self.__padding_bottom)
+
+    @property
     def top(self):
         """Top of window (y-coordinate, relative)."""
-        return 0
+        return self.__padding_top
 
     @property
     def middle(self):
         """Vertical middle of window (y-coordinate, relative)."""
-        return self.bottom // 2
+        return (self.bottom - self.top) // 2
 
     @property
     def bottom(self):
         """Bottom of window (y-coordinate, relative)."""
-        return self.height - 1
+        return self.top + self.height - 1
 
     @property
     def left(self):
         """Left of window (x-coordinate, relative)."""
-        return 0
+        return self.__padding_left
 
     @property
     def center(self):
         """Vertical center of window (x-coordinate, relative)."""
-        return self.right // 2
+        return (self.right - self.left) // 2
 
     @property
     def right(self):
         """Right of window (x-coordinate, relative)."""
-        return self.width - 1
+        return self.left + self.width - 1
 
-    def set_dimensions(self, left: int, top: int, width: int, height: int):
+    def set_dimensions(
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        padding_left: int = 0,
+        padding_top: int = 0,
+        padding_right: int = 0,
+        padding_bottom: int = 0,
+    ):
         # set dimensional attributes
         self.__left = left
         self.__top = top
         self.__width = width
         self.__height = height
+        # set padding
+        self.__padding_left = padding_left
+        self.__padding_top = padding_top
+        self.__padding_right = padding_right
+        self.__padding_bottom = padding_bottom
         # init / resize window or silently fail on error (e.g. screen overflow)
         try:
             if not self._win:
@@ -128,10 +159,13 @@ class AbstractWindow(ABC):
         attr: int | None = None,
         width: int | None = None,
         clip_overflow: bool = True,
+        overflow_padding: bool = False,
         **wrap_kwargs,
     ):
+        w_width = self.abs_width if overflow_padding else self.width
+        w_height = self.abs_height if overflow_padding else self.height
         if isinstance(str_, str):
-            wrapped_str = textwrap.wrap(str_, self.width if width is None else width, **wrap_kwargs)
+            wrapped_str = textwrap.wrap(str_, w_width if width is None else width, **wrap_kwargs)
         else:
             wrapped_str = str_
         if not isinstance(y, int):
@@ -150,16 +184,23 @@ class AbstractWindow(ABC):
                 x = self.left
         if clip_overflow:
             # subset to rows that fit within window
-            wrapped_str = wrapped_str[: self.height - y]
+            wrapped_str = wrapped_str[: w_height - y]
+            # t_overflow = 0 if overflow_padding else max(self.top - y, 0)
+            # b_overflow = (self.abs_bottom if overflow_padding else self.bottom) - x
+            # wrapped_str = wrapped_str[t_overflow: b_overflow]
         # vertical overflow
-        if y + len(wrapped_str) > self.height:
+        if y + len(wrapped_str) > w_height:
             raise errors.InsufficientSpaceError()
         for i, row in enumerate(wrapped_str):
             if clip_overflow:
                 # subset to chars that fit within window
-                row = row[: self.width - x]
+                l_overflow = 0 if overflow_padding else max(self.left - x, 0)
+                r_overflow = (self.abs_right if overflow_padding else self.right) - x + 1
+                row = row[l_overflow:r_overflow]
             # horizontal overflow
-            if len(row) > self.width - x:
+            if (not overflow_padding and (len(row) > self.right - x + 1 or x < self.left)) or len(
+                row
+            ) > self.abs_right - x + 1:
                 raise errors.InsufficientSpaceError()
             # NOTE: suppressing curses error due to exception when printing to bottom right corner
             # see https://github.com/python/cpython/issues/52490

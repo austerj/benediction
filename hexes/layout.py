@@ -6,7 +6,8 @@ from hexes import errors
 from hexes.window import AbstractWindow
 
 
-def _compute_margins(
+def _map_kwargs(
+    # margins
     m: int | None = None,
     my: int | None = None,
     mx: int | None = None,
@@ -14,14 +15,27 @@ def _compute_margins(
     mb: int | None = None,
     ml: int | None = None,
     mr: int | None = None,
+    # padding
+    p: int | None = None,
+    py: int | None = None,
+    px: int | None = None,
+    pt: int | None = None,
+    pb: int | None = None,
+    pl: int | None = None,
+    pr: int | None = None,
     **kwargs,
 ):
-    # compute margins with priority given to most specific keyword
     return dict(
+        # margins with priority given to most specific keyword
         _margin_top=mt if mt is not None else my if my is not None else m if m is not None else 0,
         _margin_bottom=mb if mb is not None else my if my is not None else m if m is not None else 0,
         _margin_left=ml if ml is not None else mx if mx is not None else m if m is not None else 0,
         _margin_right=mr if mr is not None else mx if mx is not None else m if m is not None else 0,
+        # padding with priority given to most specific keyword
+        _padding_top=pt if pt is not None else py if py is not None else p if p is not None else 0,
+        _padding_bottom=pb if pb is not None else py if py is not None else p if p is not None else 0,
+        _padding_left=pl if pl is not None else px if px is not None else p if p is not None else 0,
+        _padding_right=pr if pr is not None else px if px is not None else p if p is not None else 0,
     )
 
 
@@ -38,6 +52,11 @@ class Column:
     _margin_top: int = field(default=0, repr=False)
     _margin_right: int = field(default=0, repr=False)
     _margin_bottom: int = field(default=0, repr=False)
+    # padding
+    _padding_left: int = field(default=0, repr=False)
+    _padding_top: int = field(default=0, repr=False)
+    _padding_right: int = field(default=0, repr=False)
+    _padding_bottom: int = field(default=0, repr=False)
 
     def noutrefresh(self):
         if self._window:
@@ -73,7 +92,16 @@ class Column:
             raise errors.InsufficientSpaceError()
 
         if self._window:
-            self._window.set_dimensions(left, top, width, height)
+            self._window.set_dimensions(
+                left,
+                top,
+                width,
+                height,
+                self._padding_left,
+                self._padding_top,
+                self._padding_right,
+                self._padding_bottom,
+            )
 
         # allocate height across rows
         for row in self._rows:
@@ -102,7 +130,7 @@ class Column:
         """Add new row with fixed or dynamic height."""
         if self._window:
             raise RuntimeError("Cannot split column with a window attached into rows.")
-        new_row = Row(self, window, height, **_compute_margins(**kwargs))
+        new_row = Row(self, window, height, **_map_kwargs(**kwargs))
         self._rows.append(new_row)
         return new_row
 
@@ -137,6 +165,11 @@ class Row:
     _margin_top: int = field(default=0, repr=False)
     _margin_right: int = field(default=0, repr=False)
     _margin_bottom: int = field(default=0, repr=False)
+    # padding
+    _padding_left: int = field(default=0, repr=False)
+    _padding_top: int = field(default=0, repr=False)
+    _padding_right: int = field(default=0, repr=False)
+    _padding_bottom: int = field(default=0, repr=False)
 
     def noutrefresh(self):
         if self._window:
@@ -172,7 +205,16 @@ class Row:
             raise errors.InsufficientSpaceError()
 
         if self._window:
-            self._window.set_dimensions(left, top, width, height)
+            self._window.set_dimensions(
+                left,
+                top,
+                width,
+                height,
+                self._padding_left,
+                self._padding_top,
+                self._padding_right,
+                self._padding_bottom,
+            )
 
         # allocate width across cols
         for col in self._cols:
@@ -199,7 +241,7 @@ class Row:
         """Add new column with fixed or dynamic width."""
         if self._window:
             raise RuntimeError("Cannot split row with a window attached into columns.")
-        new_col = Column(self, window, width, **_compute_margins(**kwargs))
+        new_col = Column(self, window, width, **_map_kwargs(**kwargs))
         self._cols.append(new_col)
         return new_col
 

@@ -7,7 +7,7 @@ from hexes.window import Window
 
 def check_dimensions(item: Row | Column, width: int | float, height: int | float):
     # allowing off-by-one error due to truncation (e.g. 33-33-34 for three windows in 100 width)
-    return width - 1 <= item.window.width <= width + 1 and height - 1 <= item.window.height <= height + 1
+    return width - 1 <= item.window.abs_width <= width + 1 and height - 1 <= item.window.abs_height <= height + 1
 
 
 def w():
@@ -128,16 +128,16 @@ def test_margins():
     r0_c0_w = layout.rows[0].cols[0].window
     assert r0_c0_w.abs_left == 0
     assert r0_c0_w.abs_top == 0
-    assert r0_c0_w.abs_right == r0_c0_w.width - 1
-    assert r0_c0_w.abs_bottom == r0_c0_w.height - 1
+    assert r0_c0_w.abs_right == r0_c0_w.abs_width - 1
+    assert r0_c0_w.abs_bottom == r0_c0_w.abs_height - 1
     r0_c1_w = layout.rows[0].cols[1].window
-    assert r0_c1_w.abs_left == r0_c0_w.width
+    assert r0_c1_w.abs_left == r0_c0_w.abs_width
     assert r0_c1_w.abs_top == 0
-    assert r0_c1_w.abs_right == r0_c0_w.width + r0_c1_w.width - 1
-    assert r0_c1_w.abs_bottom == r0_c1_w.height - 1
+    assert r0_c1_w.abs_right == r0_c0_w.abs_width + r0_c1_w.abs_width - 1
+    assert r0_c1_w.abs_bottom == r0_c1_w.abs_height - 1
     r1_w = layout.rows[1].window
     assert r1_w.abs_left == 0
-    assert r1_w.abs_top == r0_c1_w.height
+    assert r1_w.abs_top == r0_c1_w.abs_height
     assert r1_w.abs_right == width - 1
     assert r1_w.abs_bottom == height - 1
 
