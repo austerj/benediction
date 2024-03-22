@@ -9,24 +9,38 @@ from dataclasses import dataclass, field
 
 from hexes import errors
 
-# map anchor to coordinate via window and string list
-HorizontalAnchor = typing.Literal["left", "center", "right", "left-outer", "center-outer", "right-outer"]
-VerticalAnchor = typing.Literal["top", "middle", "bottom", "top-outer", "middle-outer", "bottom-outer"]
-_XAnchor: dict[HorizontalAnchor, typing.Callable[[AbstractWindow, list[str]], int]] = {
-    "left": lambda w, strs: w.left,
-    "left-outer": lambda w, strs: w.left_outer,
-    "center": lambda w, strs: w.center - math.ceil(max(len(s) for s in strs) / 2) + 1,
-    "center-outer": lambda w, strs: w.center_outer - math.ceil(max(len(s) for s in strs) / 2) + 1,
-    "right": lambda w, strs: w.right - max(len(s) for s in strs) + 1,
-    "right-outer": lambda w, strs: w.right_outer - max(len(s) for s in strs) + 1,
+# map string list to anchor value
+HorizontalAnchor = typing.Literal["left", "center", "right"]
+VerticalAnchor = typing.Literal["top", "middle", "bottom"]
+_XANCHOR: dict[HorizontalAnchor, typing.Callable[[list[str]], int]] = {
+    "left": lambda strs: 0,
+    "center": lambda strs: -max(len(s) for s in strs) // 2 + 1,
+    "right": lambda strs: -max(len(s) for s in strs) + 1,
 }
-_YAnchor: dict[VerticalAnchor, typing.Callable[[AbstractWindow, list[str]], int]] = {
-    "top": lambda w, strs: w.top,
-    "top-outer": lambda w, strs: w.top_outer,
-    "middle": lambda w, strs: w.middle - math.ceil(len(strs) / 2) + 1,
-    "middle-outer": lambda w, strs: w.middle_outer - math.ceil(len(strs) / 2) + 1,
-    "bottom": lambda w, strs: w.bottom - len(strs) + 1,
-    "bottom-outer": lambda w, strs: w.bottom_outer - len(strs) + 1,
+_YANCHOR: dict[VerticalAnchor, typing.Callable[[list[str]], int]] = {
+    "top": lambda strs: 0,
+    "middle": lambda strs: -len(strs) // 2 + 1,
+    "bottom": lambda strs: -len(strs) + 1,
+}
+
+# match positions to default anchors
+HorizontalPosition = typing.Literal["left", "center", "right", "left-outer", "center-outer", "right-outer"]
+VerticalPosition = typing.Literal["top", "middle", "bottom", "top-outer", "middle-outer", "bottom-outer"]
+_XDEFAULTANCHOR: dict[HorizontalPosition, HorizontalAnchor] = {
+    "left": "left",
+    "left-outer": "left",
+    "center": "center",
+    "center-outer": "center",
+    "right": "right",
+    "right-outer": "right",
+}
+_YDEFAULTANCHOR: dict[VerticalPosition, VerticalAnchor] = {
+    "top": "top",
+    "top-outer": "top",
+    "middle": "middle",
+    "middle-outer": "middle",
+    "bottom": "bottom",
+    "bottom-outer": "bottom",
 }
 
 
@@ -269,21 +283,31 @@ class AbstractWindow(ABC):
         self,
         str_: str | list[str],
         attr: int | None = None,
-        y: VerticalAnchor = "top",
-        x: HorizontalAnchor = "left",
+        y: int | VerticalPosition = "top",
+        x: int | HorizontalPosition = "left",
+        y_anchor: VerticalAnchor | None = None,
+        x_anchor: HorizontalAnchor | None = None,
         y_shift: int = 0,
         x_shift: int = 0,
         wrap_width: int | None = None,
         **wrap_kwargs,
     ):
-        # wrap text
+        # infer default padding overflow behavior from anchors
         if isinstance(str_, str):
+            # wrap text
             wrapped_str = textwrap.wrap(str_, self.width if wrap_width is None else wrap_width, **wrap_kwargs)
         else:
             wrapped_str = str_
+        # compute anchors
+        y_anchor_ = _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](
+            wrapped_str
+        )
+        x_anchor_ = _XANCHOR[
+            x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
+        ](wrapped_str)
         # get base coordinates
-        y_ = _YAnchor[y](self, wrapped_str) + y_shift
-        x_ = _XAnchor[x](self, wrapped_str) + x_shift
+        y_: int = y if isinstance(y, int) else getattr(self, y.replace("-", "_")) + y_anchor_ + y_shift
+        x_: int = x if isinstance(x, int) else getattr(self, x.replace("-", "_")) + x_anchor_ + x_shift
         # add row by row from y_ and down
         for i, row in enumerate(wrapped_str):
             # NOTE: suppressing curses error due to exception when printing to bottom right corner
