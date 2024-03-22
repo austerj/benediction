@@ -269,19 +269,22 @@ class AbstractWindow(ABC):
         self,
         str_: str | list[str],
         attr: int | None = None,
-        y: int = 0,
-        x: int = 0,
-        y_anchor: VerticalAnchor = "top",
-        x_anchor: HorizontalAnchor = "left",
-        width: int | None = None,
+        y: VerticalAnchor = "top",
+        x: HorizontalAnchor = "left",
+        y_shift: int = 0,
+        x_shift: int = 0,
+        wrap_width: int | None = None,
         **wrap_kwargs,
     ):
+        # wrap text
         if isinstance(str_, str):
-            wrapped_str = textwrap.wrap(str_, self.width if width is None else width, **wrap_kwargs)
+            wrapped_str = textwrap.wrap(str_, self.width if wrap_width is None else wrap_width, **wrap_kwargs)
         else:
             wrapped_str = str_
-        y_ = _YAnchor[y_anchor](self, wrapped_str) + y
-        x_ = _XAnchor[x_anchor](self, wrapped_str) + x
+        # get base coordinates
+        y_ = _YAnchor[y](self, wrapped_str) + y_shift
+        x_ = _XAnchor[x](self, wrapped_str) + x_shift
+        # add row by row from y_ and down
         for i, row in enumerate(wrapped_str):
             # NOTE: suppressing curses error due to exception when printing to bottom right corner
             # see https://github.com/python/cpython/issues/52490
@@ -289,7 +292,7 @@ class AbstractWindow(ABC):
                 if attr is not None:
                     self.win.addstr(y_ + i, x_, row, attr)
                 else:
-                    self.win.addstr(x_ + i, x_, row)
+                    self.win.addstr(y_ + i, x_, row)
             except curses.error:
                 pass
 
