@@ -54,7 +54,7 @@ def test_dynamic_dimensions():
     # fmt: on
 
     for height, width in [(100, 100), (80, 120), (91, 51)]:
-        layout.update(height, width)
+        layout.update(0, 0, height, width)
 
         # row0 cols
         r0_c_w = width / 2
@@ -84,18 +84,18 @@ def test_insufficient_space():
 
     # fail: insufficient height
     with pytest.raises(errors.InsufficientSpaceError):
-        layout.update(40, 40)
+        layout.update(0, 0, 40, 40)
 
     # fail: insufficient width
     with pytest.raises(errors.InsufficientSpaceError):
-        layout.update(60, 20)
+        layout.update(0, 0, 60, 20)
 
     # still fails because dynamic column has no available space
     with pytest.raises(errors.InsufficientSpaceError):
-        layout.update(50, 30)
+        layout.update(0, 0, 50, 30)
 
     # does not fail - dynamic column gets width of 1
-    layout.update(50, 31)
+    layout.update(0, 0, 50, 31)
     assert check_dimensions(layout.rows[0].cols[1], 1, 50)
 
 
@@ -117,8 +117,8 @@ def test_margins():
     # fmt: on
 
     height, width = 100, 100
-    layout.update(height, width)
-    margin_layout.update(height, width)
+    layout.update(0, 0, height, width)
+    margin_layout.update(0, 0, height, width)
 
     # unmargined layout takes up all available space
     assert check_dimensions(layout.rows[0].cols[0], width / 2, height / 2)
@@ -168,7 +168,7 @@ def test_dynamic_floats():
 
     layout.row(w(), height=0.5).row(w(), height=0.2).row().subd().col(w(), width=0.4).col(w()).col(w())
 
-    layout.update(100, 100)
+    layout.update(0, 0, 100, 100)
     assert check_dimensions(layout.rows[0], 100, 50)
     assert check_dimensions(layout.rows[1], 100, 20)
     assert check_dimensions(layout.rows[2].cols[0], 40, 30)
@@ -183,8 +183,8 @@ def test_padding():
     layout.row(w())
     padded_layout.row(w(), p=1, pr=2)
 
-    layout.update(100, 100)
-    padded_layout.update(100, 100)
+    layout.update(0, 0, 100, 100)
+    padded_layout.update(0, 0, 100, 100)
 
     row = layout.rows[0]
     padded_row = padded_layout.rows[0]
