@@ -156,7 +156,7 @@ class Column:
 class Row:
     """Layout row."""
 
-    _parent: Column = field(repr=False)
+    _parent: Column | Layout = field(repr=False)
     _window: AbstractWindow | None
     height: int | float | None  # # None or float for dynamic allocation of available space
     _cols: list[Column] = field(default_factory=list, init=False)
@@ -247,6 +247,8 @@ class Row:
 
     def subd(self):
         """Subdivide row into columns via chained methods."""
+        if isinstance(self._parent, Layout):
+            raise TypeError("Cannot subdivide root row.")
         return RowSubdivider(self._parent, self)
 
     @property
@@ -307,26 +309,65 @@ class ColumnSubdivider:
         return RowSubdivider(self, self._row)
 
 
+@dataclass
 class Layout:
     """Partition screen into a responsive layout of nested rows and columns."""
 
-    def __init__(self, **kwargs):
-        # root layout column
-        self.__col = Column(self, None, None, **_map_kwargs(**kwargs))
+    # root layout nodes
+    __col: Column | None = field(default=None, init=False)
+    __row: Row | None = field(default=None, init=False)
+
+    def __post_init__(self, **kwargs):
+        self.kwargs = kwargs
 
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Subdivide layout into rows via chained methods."""
+        if self.__row is not None:
+            raise errors.LayoutError("Cannot add row to row-major layout.")
+        elif self.__col is None:
+            self.__col = Column(self, None, None, **_map_kwargs(**self.kwargs))
         return self.__col.row(window, height, **kwargs)
+
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
+        """Subdivide layout into columns via chained methods."""
+        if self.__col is not None:
+            raise errors.LayoutError("Cannot add column to column-major layout.")
+        elif self.__row is None:
+            self.__row = Row(self, None, None, **_map_kwargs(**self.kwargs))
+        return self.__row.col(window, width, **kwargs)
 
     def update(self, left: int, top: int, height: int, width: int):
         """Update rows and columns of layout."""
-        self.__col.update(left, top, width, height)
+        self.root.update(left, top, width, height)
 
     def noutrefresh(self):
         """Refresh all windows in layout."""
-        self.__col.noutrefresh()
+        self.root.noutrefresh()
+
+    @property
+    def root(self):
+        if self.__col is not None:
+            return self.__col
+        elif self.__row is not None:
+            return self.__row
+        else:
+            raise errors.LayoutError("No root node in layout.")
 
     @property
     def rows(self):
         """Rows of root layout."""
+        if self.__col is None:
+            return []
         return self.__col.rows
+
+    @property
+    def cols(self):
+        """Columns of root layout."""
+        if self.__row is None:
+            return []
+        return self.__row.cols
+
+    @property
+    def order(self):
+        """Order of layout (row / column major)."""
+        return "col" if self.__col is not None else "row" if self.__row is not None else None

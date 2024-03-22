@@ -204,3 +204,22 @@ def test_padding():
     assert padded_row.window.top == 1
     assert padded_row.window.right == 97
     assert padded_row.window.bottom == 98
+
+
+def test_layout_order():
+
+    row_layout = Layout()
+    row_layout.col().row(w()).row(w())
+    assert row_layout.order == "row"
+
+    # cannot add row to row-major layout
+    with pytest.raises(errors.LayoutError):
+        row_layout.row()
+
+    col_layout = Layout()
+    col_layout.row().col(w()).col(w())
+    assert col_layout.order == "col"
+
+    # cannot add column to column-major layout
+    with pytest.raises(errors.LayoutError):
+        col_layout.col()

@@ -19,3 +19,7 @@ class WindowNotInitializedError(HexesError):
 
 class UnboundWindowError(HexesError):
     ...
+
+
+class LayoutError(HexesError):
+    ...
