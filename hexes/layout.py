@@ -313,28 +313,27 @@ class ColumnSubdivider:
 class Layout:
     """Partition screen into a responsive layout of nested rows and columns."""
 
-    # root layout nodes
-    __col: Column | None = field(default=None, init=False)
-    __row: Row | None = field(default=None, init=False)
+    # root layout node
+    __root: Column | Row | None = field(default=None, init=False)
 
     def __post_init__(self, **kwargs):
         self.kwargs = kwargs
 
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         """Subdivide layout into rows via chained methods."""
-        if self.__row is not None:
+        if self.__root is None:
+            self.__root = Column(self, None, None, **_map_kwargs(**self.kwargs))
+        elif isinstance(self.__root, Row):
             raise errors.LayoutError("Cannot add row to row-major layout.")
-        elif self.__col is None:
-            self.__col = Column(self, None, None, **_map_kwargs(**self.kwargs))
-        return self.__col.row(window, height, **kwargs)
+        return self.root.row(window, height, **kwargs)
 
     def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         """Subdivide layout into columns via chained methods."""
-        if self.__col is not None:
+        if self.__root is None:
+            self.__root = Row(self, None, None, **_map_kwargs(**self.kwargs))
+        elif isinstance(self.__root, Column):
             raise errors.LayoutError("Cannot add column to column-major layout.")
-        elif self.__row is None:
-            self.__row = Row(self, None, None, **_map_kwargs(**self.kwargs))
-        return self.__row.col(window, width, **kwargs)
+        return self.__root.col(window, width, **kwargs)
 
     def update(self, left: int, top: int, height: int, width: int):
         """Update rows and columns of layout."""
@@ -346,28 +345,25 @@ class Layout:
 
     @property
     def root(self):
-        if self.__col is not None:
-            return self.__col
-        elif self.__row is not None:
-            return self.__row
-        else:
+        if self.__root is None:
             raise errors.LayoutError("No root node in layout.")
+        return self.__root
 
     @property
-    def rows(self):
+    def rows(self) -> list[Row]:
         """Rows of root layout."""
-        if self.__col is None:
-            return []
-        return self.__col.rows
+        if isinstance(self.root, Column):
+            return self.root.rows
+        return []
 
     @property
-    def cols(self):
+    def cols(self) -> list[Column]:
         """Columns of root layout."""
-        if self.__row is None:
-            return []
-        return self.__row.cols
+        if isinstance(self.root, Row):
+            return self.root.cols
+        return []
 
     @property
     def order(self):
         """Order of layout (row / column major)."""
-        return "col" if self.__col is not None else "row" if self.__row is not None else None
+        return "col" if isinstance(self.__root, Column) else "row" if isinstance(self.__root, Row) else None
