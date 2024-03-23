@@ -433,7 +433,7 @@ class Layout:
             raise errors.LayoutError("Cannot add column to column-major layout.")
         return self.__root.col(window, width, **kwargs)
 
-    def update(self, left: int, top: int, height: int, width: int):
+    def update(self, left: int, top: int, width: int, height: int):
         """Update rows and columns of layout."""
         self.root.update(left, top, width, height)
 

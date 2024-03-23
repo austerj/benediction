@@ -54,7 +54,7 @@ def test_dynamic_dimensions():
     # fmt: on
 
     for height, width in [(100, 100), (80, 120), (91, 51)]:
-        layout.update(0, 0, height, width)
+        layout.update(0, 0, width, height)
 
         # row0 cols
         r0_c_w = width / 2
@@ -88,14 +88,14 @@ def test_insufficient_space():
 
     # fail: insufficient width
     with pytest.raises(errors.InsufficientSpaceError):
-        layout.update(0, 0, 60, 20)
+        layout.update(0, 0, 20, 60)
 
     # still fails because dynamic column has no available space
     with pytest.raises(errors.InsufficientSpaceError):
-        layout.update(0, 0, 50, 30)
+        layout.update(0, 0, 30, 50)
 
     # does not fail - dynamic column gets width of 1
-    layout.update(0, 0, 50, 31)
+    layout.update(0, 0, 31, 50)
     assert check_dimensions(layout.rows[0].cols[1], 1, 50)
 
 
