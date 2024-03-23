@@ -400,8 +400,10 @@ class Layout:
 
     # root layout node
     __root: Column | Row | None = field(default=None, init=False)
+    __root_window: AbstractWindow | None = field(default=None)
 
-    def __init__(self, **kwargs: typing.Unpack[LayoutKwargs]):
+    def __init__(self, __root_window: AbstractWindow, **kwargs: typing.Unpack[LayoutKwargs]):
+        self.__root_window = __root_window
         self.kwargs = kwargs
 
     def row(
@@ -412,7 +414,7 @@ class Layout:
     ):
         """Subdivide layout into rows via chained methods."""
         if self.__root is None:
-            self.__root = Column(self, None, None, **_map_kwargs(**self.kwargs))
+            self.__root = Column(self, self.__root_window, None, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Row):
             raise errors.LayoutError("Cannot add row to row-major layout.")
         return self.root.row(window, height, **kwargs)
@@ -425,7 +427,7 @@ class Layout:
     ):
         """Subdivide layout into columns via chained methods."""
         if self.__root is None:
-            self.__root = Row(self, None, None, **_map_kwargs(**self.kwargs))
+            self.__root = Row(self, self.__root_window, None, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Column):
             raise errors.LayoutError("Cannot add column to column-major layout.")
         return self.__root.col(window, width, **kwargs)
@@ -451,6 +453,10 @@ class Layout:
         if self.__root is None:
             raise errors.LayoutError("No root node in layout.")
         return self.__root
+
+    @property
+    def window(self):
+        return self.root.window
 
     @property
     def rows(self) -> list[Row]:

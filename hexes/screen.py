@@ -42,7 +42,7 @@ class Screen:
 
     def new_layout(self, **kwargs: typing.Unpack[LayoutKwargs]):
         """Return a new layout managed by the screen."""
-        layout = Layout(**kwargs)
+        layout = Layout(self.window, **kwargs)
         self.layouts.append(layout)
         return layout
 
