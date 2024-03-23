@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 
 from hexes import errors
+from hexes.style import Style
 from hexes.window import AbstractWindow
 
 
@@ -25,8 +26,10 @@ def _map_kwargs(
     pb: int | None = None,
     pl: int | None = None,
     pr: int | None = None,
-    **kwargs,
-):
+    # style
+    style: Style = Style.default,
+    **style_kwargs,
+) -> dict[str, typing.Any]:
     return dict(
         # margins with priority given to most specific keyword
         _margin_top=mt if mt is not None else my if my is not None else m if m is not None else 0,
@@ -38,6 +41,8 @@ def _map_kwargs(
         _padding_bottom=pb if pb is not None else py if py is not None else p if p is not None else 0,
         _padding_left=pl if pl is not None else px if px is not None else p if p is not None else 0,
         _padding_right=pr if pr is not None else px if px is not None else p if p is not None else 0,
+        # style
+        _style=style.inherit(**style_kwargs),
     )
 
 
@@ -55,6 +60,12 @@ class LayoutItem(ABC):
     _padding_top: int = field(default=0, repr=False, kw_only=True)
     _padding_right: int = field(default=0, repr=False, kw_only=True)
     _padding_bottom: int = field(default=0, repr=False, kw_only=True)
+    # style
+    _style: Style = field(default=Style.default, repr=False, kw_only=True)
+
+    def __post_init__(self):
+        if self._window is not None:
+            self._window.set_style(self._style)
 
     @property
     def window(self):
@@ -174,7 +185,7 @@ class Column(LayoutItem):
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         if self._window:
             raise RuntimeError("Cannot split column with a window attached into rows.")
-        new_row = Row(self, window, height, **_map_kwargs(**kwargs))
+        new_row = Row(self, window, height, **_map_kwargs(style=self._style, **kwargs))
         self._rows.append(new_row)
         return new_row
 
@@ -264,7 +275,7 @@ class Row(LayoutItem):
     def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         if self._window:
             raise RuntimeError("Cannot split row with a window attached into columns.")
-        new_col = Column(self, window, width, **_map_kwargs(**kwargs))
+        new_col = Column(self, window, width, **_map_kwargs(style=self._style, **kwargs))
         self._cols.append(new_col)
         return new_col
 
