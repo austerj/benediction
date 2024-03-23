@@ -4,14 +4,12 @@ import curses
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from hexes.layout import Layout
 from hexes.screen import Screen
 
 
 @dataclass
 class Application(ABC):
     screen: Screen = field(default_factory=Screen, init=False, repr=False)
-    layout: Layout = field(init=False, repr=False)
     running: bool | None = field(default=None, init=False)
 
     def run(self):
@@ -20,10 +18,9 @@ class Application(ABC):
             raise RuntimeError("Application has already been run.")
         try:
             self.running = True
-            self.layout = Layout()
             with self.screen as _:
                 self.setup()
-                self.update_layout()
+                self.screen.update_layouts()
                 self.main()
         finally:
             self.running = False
@@ -42,16 +39,18 @@ class Application(ABC):
             self.refresh()
 
     def on_resize(self):
-        self.update_layout()
-
-    def update_layout(self):
-        """Update layout and clear screen."""
+        """Respond to terminal resize event."""
         self.screen.clear()
+        self.screen.update_layouts()
         self.screen.noutrefresh()
-        height, width = self.screen.stdscr.getmaxyx()
-        self.layout.update(0, 0, height, width)
-        self.layout.noutrefresh()
-        self.layout.clear()
+
+    def new_layout(self, **kwargs):
+        """Return a new layout managed by the application screen."""
+        return self.screen.new_layout(**kwargs)
+
+    def update_layouts(self):
+        """Update layouts managed by the application screen."""
+        return self.screen.update_layouts()
 
     @abstractmethod
     def refresh(self):
