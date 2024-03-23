@@ -1,9 +1,8 @@
 import curses
-import typing
 from dataclasses import dataclass, field
 
 from hexes import errors
-from hexes.color import tailwind
+from hexes.color import tailwind, x11
 
 RGB = tuple[int, int, int]
 
@@ -40,30 +39,30 @@ class ColorPair(int):
 class Color_:
     __colors: dict[RGB, Color] = dict()
 
-    # overloading init for typing purposes
-    @typing.overload
-    def __init__(self, name: tailwind.COLOR):
-        ...
-
-    @typing.overload
-    def __init__(self, red: int, green: int, blue: int):
-        ...
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __new__(cls, name_or_red: tailwind.COLOR | int = 0, green: int = 0, blue: int = 0):
-        if isinstance(name_or_red, str):
-            try:
-                rgb = tailwind.colors[name_or_red]
-            except KeyError:
-                raise errors.ColorError("Color not found.")
-        else:
-            rgb = name_or_red, green, blue
+    def __new__(cls, red: int = 0, green: int = 0, blue: int = 0):
+        rgb = red, green, blue
         # add new color or retrieve existing
         if rgb not in cls.__colors:
             cls.__colors[rgb] = Color(len(cls.__colors), *rgb)
         return cls.__colors[rgb]
+
+    @classmethod
+    def tw(cls, color: tailwind.COLOR) -> Color:
+        """Get named Tailwind color."""
+        try:
+            rgb = tailwind.colors[color]
+        except KeyError:
+            raise errors.ColorError("Tailwind color not found.")
+        return cls(*rgb)  # type: ignore
+
+    @classmethod
+    def x11(cls, color: x11.COLOR) -> Color:
+        """Get named X11 color."""
+        try:
+            rgb = x11.colors[color]
+        except KeyError:
+            raise errors.ColorError("X11 color not found.")
+        return cls(*rgb)  # type: ignore
 
 
 class ColorPair_:

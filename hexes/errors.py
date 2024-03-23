@@ -23,3 +23,7 @@ class UnboundWindowError(HexesError):
 
 class LayoutError(HexesError):
     ...
+
+
+class ColorError(HexesError):
+    ...
