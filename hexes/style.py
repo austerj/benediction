@@ -89,6 +89,9 @@ class Style:
         # set integer representation of style
         object.__setattr__(self, "_attr", _bitor(tuple(v for k, v in _ATTRIBUTES.items() if getattr(self, k))))
 
+    def __int__(self):
+        return self.attr
+
     @property
     def attr(self) -> int:
         if self.fg is not None and self.bg is not None:
