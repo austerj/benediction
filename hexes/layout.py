@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from hexes import errors
 from hexes.style import Style, StyleKwargs
-from hexes.window import AbstractWindow
+from hexes.window import AbstractWindow, ScreenWindow
 
 
 class LayoutKwargs(StyleKwargs, typing.TypedDict):
@@ -138,7 +138,7 @@ class LayoutItem(ABC):
     def apply(self, fn: typing.Callable[[AbstractWindow], typing.Any]):
         """Apply function to all nested windows."""
         # exclude root window
-        if self._window and not isinstance(self._parent, Layout):
+        if self._window and not isinstance(self._window, ScreenWindow):
             fn(self._window)
         for item in self._items:
             item.apply(fn)
@@ -179,7 +179,7 @@ class Column(LayoutItem):
         if dynamic_height < n_dynamic_rows:
             raise errors.InsufficientSpaceError()
 
-        if self._window and not isinstance(self._parent, Layout):
+        if self._window and not isinstance(self._window, ScreenWindow):
             self._window.set_dimensions(
                 left,
                 top,
@@ -269,7 +269,7 @@ class Row(LayoutItem):
         if dynamic_width < n_dynamic_cols:
             raise errors.InsufficientSpaceError()
 
-        if self._window and not isinstance(self._parent, Layout):
+        if self._window and not isinstance(self._window, ScreenWindow):
             self._window.set_dimensions(
                 left,
                 top,
