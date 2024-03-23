@@ -16,3 +16,15 @@ def test_flag_equivalence():
 
     # style with no colors and multiple flags is equivalent to bitwise or of flags
     assert Style(bold=True, italic=True).attr == curses.A_BOLD | curses.A_ITALIC
+
+
+def test_inheritance():
+    # bold style is bold
+    parent_style = Style(bold=True)
+    assert parent_style.attr == curses.A_BOLD
+
+    # inheriting from parent style combines flags
+    assert parent_style.inherit(italic=True).attr == curses.A_BOLD | curses.A_ITALIC
+
+    # but disabling flag will replace parent flag
+    assert parent_style.inherit(italic=True, bold=False).attr == curses.A_ITALIC
