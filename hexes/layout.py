@@ -62,10 +62,18 @@ class LayoutItem(ABC):
         return self._window
 
     def noutrefresh(self):
+        """Delayed refresh of window and all nested layout items."""
         if self._window:
             self._window.noutrefresh()
         for item in self._items:
             item.noutrefresh()
+
+    def clear(self):
+        """Clear window and all nested layout items."""
+        if self._window:
+            self._window.win.clear()
+        for item in self._items:
+            item.clear()
 
     @abstractproperty
     def _items(self) -> list[LayoutItem]:
@@ -353,6 +361,10 @@ class Layout:
     def noutrefresh(self):
         """Refresh all windows in layout."""
         self.root.noutrefresh()
+
+    def clear(self):
+        """Clear all windows in layout."""
+        self.root.clear()
 
     @property
     def root(self):
