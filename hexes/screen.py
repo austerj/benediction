@@ -2,11 +2,12 @@ import curses
 from dataclasses import dataclass, field
 
 from hexes.layout import Layout
+from hexes.window import ScreenWindow
 
 
 @dataclass(slots=True)
 class Screen:
-    _stdscr: "curses._CursesWindow | None" = field(default=None, init=False)
+    _window: ScreenWindow | None = field(default=None, init=False)
     layouts: list[Layout] = field(default_factory=list)
 
     def __enter__(self):
@@ -31,9 +32,10 @@ class Screen:
         for layout in self.layouts:
             layout.noutrefresh()
 
-    def update_layouts(self):
-        """Update all layouts based on current screen size."""
+    def update(self):
+        """Update screen window and all layouts based on current screen size."""
         height, width = self.stdscr.getmaxyx()
+        self.window.set_dimensions(0, 0, width, height)
         for layout in self.layouts:
             layout.update(0, 0, height, width)
 
@@ -48,14 +50,15 @@ class Screen:
 
     def _setup(self):
         # replicate initialization behavior of curses.wrapper
-        self._stdscr = curses.initscr()
+        self._window = ScreenWindow().init()
         curses.noecho()
         curses.cbreak()
-        self._stdscr.keypad(True)
+        self.stdscr.keypad(True)
         try:
             curses.start_color()
         except:
             pass
+        # setting _win manually - cannot initialize screen window outside initscr
         return self
 
     def _teardown(self):
@@ -66,7 +69,11 @@ class Screen:
         curses.endwin()
 
     @property
+    def window(self):
+        if not self._window:
+            raise RuntimeError("Screen must be initialized before window can be accessed.")
+        return self._window
+
+    @property
     def stdscr(self):
-        if not self._stdscr:
-            raise RuntimeError("Screen must be initialized before being accessed")
-        return self._stdscr
+        return self.window.stdscr

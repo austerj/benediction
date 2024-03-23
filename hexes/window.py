@@ -379,13 +379,16 @@ class AbstractWindow(ABC):
 class Window(AbstractWindow):
     def noutrefresh(self):
         self.win.noutrefresh()
+        return self
 
     def init(self, left: int, top: int, width: int, height: int):
         self._win = curses.newwin(height, width, top, left)
+        return self
 
     def resize(self, left: int, top: int, width: int, height: int):
         self.win.resize(height, width)
         self.win.mvwin(top, left)
+        return self
 
 
 @dataclass
@@ -408,6 +411,7 @@ class Pad(AbstractWindow):
 
     def noutrefresh(self):
         self.win.noutrefresh(self.top_shift, self.left_shift, self.top, self.left, self.bottom, self.right)
+        return self
 
     def init(self, *args, **kwargs):
         # intrinsic pad size only depends on content size
@@ -416,16 +420,18 @@ class Pad(AbstractWindow):
         if self.content is not None:
             for i, line in enumerate(self.content):
                 self._win.addstr(i, 0, line)
+        return self
 
     def resize(self, *args, **kwargs):
         # pad is "resized" on refresh
-        pass
+        return self
 
     def shift(self, top: int | None = None, left: int | None = None):
         if top is not None:
             self._top_shift = top
         if left is not None:
             self._left_shift = left
+        return self
 
     @property
     def content_width(self):
@@ -497,3 +503,14 @@ class ScrollingPad(Pad):
             - math.floor(offset),
             0,
         )
+
+
+@dataclass
+class ScreenWindow(Window):
+    def init(self, *args, **kwargs):
+        self._win = curses.initscr()
+        return self
+
+    @property
+    def stdscr(self):
+        return self.win

@@ -20,7 +20,7 @@ class Application(ABC):
             self.running = True
             with self.screen as _:
                 self.setup()
-                self.screen.update_layouts()
+                self.screen.update()
                 self.main()
         finally:
             self.running = False
@@ -41,16 +41,12 @@ class Application(ABC):
     def on_resize(self):
         """Respond to terminal resize event."""
         self.screen.clear()
-        self.screen.update_layouts()
+        self.screen.update()
         self.screen.noutrefresh()
 
     def new_layout(self, **kwargs):
         """Return a new layout managed by the application screen."""
         return self.screen.new_layout(**kwargs)
-
-    def update_layouts(self):
-        """Update layouts managed by the application screen."""
-        return self.screen.update_layouts()
 
     @abstractmethod
     def refresh(self):
