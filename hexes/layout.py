@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing
 from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 
@@ -98,6 +99,13 @@ class LayoutItem(ABC):
     @abstractmethod
     def subd(self):
         raise NotImplementedError
+
+    def apply(self, fn: typing.Callable[[AbstractWindow], typing.Any]):
+        """Apply function to all nested windows."""
+        if self._window:
+            fn(self._window)
+        for item in self._items:
+            item.apply(fn)
 
 
 @dataclass
@@ -365,6 +373,10 @@ class Layout:
     def clear(self):
         """Clear all windows in layout."""
         self.root.clear()
+
+    def apply(self, fn: typing.Callable[[AbstractWindow], typing.Any]):
+        """Apply function to all windows in layout."""
+        self.root.apply(fn)
 
     @property
     def root(self):
