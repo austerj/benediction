@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from hexes import errors, text
-from hexes.color.color import Color, Color_, ColorPair_
+from hexes.style import Style
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -65,6 +65,8 @@ class AbstractWindow(ABC):
     __padding_top: int = field(default=0, init=False, repr=False)
     __padding_right: int = field(default=0, init=False, repr=False)
     __padding_bottom: int = field(default=0, init=False, repr=False)
+    # styles
+    __style: Style = field(default=Style.default, init=False)
 
     # dimensions
     @property
@@ -218,6 +220,14 @@ class AbstractWindow(ABC):
         except curses.error:
             pass
 
+    def set_style(self, style: Style):
+        self.__style = style
+        return self
+
+    @property
+    def style(self):
+        return self.__style
+
     @property
     def win(self):
         if self._win is None:
@@ -230,11 +240,11 @@ class AbstractWindow(ABC):
         from_x: int | HorizontalPosition,
         to_y: int | VerticalPosition | None,
         to_x: int | HorizontalPosition | None,
-        attr: int,
         y_shift: int = 0,
         x_shift: int = 0,
         to_y_shift: int = 0,
         to_x_shift: int = 0,
+        **style_kwargs,
     ):
         """Set the attributes in a region."""
         # get region
@@ -249,7 +259,7 @@ class AbstractWindow(ABC):
         # apply attribute to each row of region
         num = max(to_x_ - from_x_ + 1, 0)
         for y in range(from_y_, to_y_ + 1):
-            self.win.chgat(y, from_x_, num, attr)
+            self.win.chgat(y, from_x_, num, self.style.inherit(**style_kwargs).attr)
 
     def addstr(
         self,
@@ -265,10 +275,9 @@ class AbstractWindow(ABC):
         ignore_overflow: bool = False,
         alignment: text.HorizontalAlignment | None = "left",
         wrap_width: int | None = None,
-        fg: Color | None = None,
-        bg: Color | None = None,
         attr: int | None = None,
-        **wrap_kwargs,
+        wrap_kwargs: dict[str, typing.Any] = {},
+        **style_kwargs,
     ):
         """Add a (multi-line) string to the window."""
         # infer overflow clipping
@@ -330,11 +339,8 @@ class AbstractWindow(ABC):
         y_ += top_clip
         x_ += left_clip
 
-        # construct attr
-        if fg or bg:
-            if attr is not None:
-                raise errors.ColorError("Cannot provide foreground or background colors if attr is specified.")
-            attr = ColorPair_(Color_.default if fg is None else fg, Color_.default if bg is None else bg)
+        # inherit from window style if any kwargs were provided
+        style_ = self.style.inherit(**style_kwargs) if style_kwargs else self.style
 
         # add row by row from y_ and down
         for i, row in enumerate(strs[top_clip:bottom_clip]):
@@ -342,9 +348,9 @@ class AbstractWindow(ABC):
             # see https://github.com/python/cpython/issues/52490
             try:
                 if attr is not None:
-                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip], attr)
+                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip], style_.attr)
                 else:
-                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip])
+                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip], style_.attr)
             except curses.error:
                 pass
 
