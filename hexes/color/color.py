@@ -44,6 +44,7 @@ class ColorPair(int):
 
 # exposed color classes that internally manages uniqueness
 class Color_:
+    __using_default_colors: bool = False
     __colors: dict[RGB, Color] = dict()
     default = Color(-1, None, None, None)  # type: ignore
 
@@ -51,6 +52,10 @@ class Color_:
         rgb = red, green, blue
         # add new color or retrieve existing
         if rgb not in cls.__colors:
+            # call use_default_colors if not done already
+            if not cls.__using_default_colors:
+                curses.use_default_colors()
+                cls.__using_default_colors = True
             number = len(cls.__colors)
             cls.__colors[rgb] = Color(number, *rgb)
             # init new color definition (mapping 0-255 to curses range 0-1000)
