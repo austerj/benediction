@@ -532,3 +532,7 @@ class ScreenWindow(Window):
     @property
     def stdscr(self):
         return self.win
+
+    def resize(self, *args, **kwargs):
+        # screen window cannot be resized
+        pass
