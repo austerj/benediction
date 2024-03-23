@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import curses
 import typing
 from dataclasses import dataclass, field
@@ -18,6 +20,16 @@ class Color(int):
 
     def __new__(cls, number: int, *args, **kwargs):
         return super().__new__(cls, number)
+
+    @property
+    def fg(self) -> ColorPair:
+        """Return color as foreground paired with default background."""
+        return ColorPair_(self, Color_.default)
+
+    @property
+    def bg(self) -> ColorPair:
+        """Return color as background paired with default foreground."""
+        return ColorPair_(Color_.default, self)
 
 
 @dataclass(frozen=True)
