@@ -253,17 +253,17 @@ class AbstractWindow(ABC):
     def addstr(
         self,
         str_: str | list[str],
-        attr: int | None = None,
         y: int | VerticalPosition = "top",
         x: int | HorizontalPosition = "left",
         y_anchor: VerticalAnchor | None = None,
         x_anchor: HorizontalAnchor | None = None,
+        attr: int | None = None,
         y_shift: int = 0,
         x_shift: int = 0,
         clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         ignore_overflow: bool = False,
-        text_alignment: text.HorizontalAlignment | None = "left",
+        alignment: text.HorizontalAlignment | None = "left",
         wrap_width: int | None = None,
         **wrap_kwargs,
     ):
@@ -290,8 +290,8 @@ class AbstractWindow(ABC):
             strs = str_
 
         # align text
-        if text_alignment is not None:
-            strs = text.align(strs, text_alignment)
+        if alignment is not None:
+            strs = text.align(strs, alignment)
 
         # compute anchors
         y_anchor_ = _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](
