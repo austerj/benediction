@@ -7,7 +7,7 @@ import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from hexes import errors
+from hexes import errors, text
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -263,15 +263,35 @@ class AbstractWindow(ABC):
         clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         ignore_overflow: bool = False,
+        text_alignment: text.HorizontalAlignment | None = "left",
         wrap_width: int | None = None,
         **wrap_kwargs,
     ):
         """Add a (multi-line) string to the window."""
+        # infer overflow clipping
+        if clip_overflow_y is None:
+            clip_overflow_y = False if isinstance(y, int) else "outer" if y.endswith("outer") else "inner"
+        if clip_overflow_x is None:
+            clip_overflow_x = False if isinstance(x, int) else "outer" if x.endswith("outer") else "inner"
+
         # wrap text
+        # TODO: infer narrower width based on position / anchor, TBD
         if isinstance(str_, str):
-            strs = textwrap.wrap(str_, self.width if wrap_width is None else wrap_width, **wrap_kwargs)
+            strs = textwrap.wrap(
+                str_,
+                wrap_width
+                if wrap_width is not None
+                else self.width
+                if clip_overflow_x == "inner"
+                else self.width_outer,
+                **wrap_kwargs,
+            )
         else:
             strs = str_
+
+        # align text
+        if text_alignment is not None:
+            strs = text.align(strs, text_alignment)
 
         # compute anchors
         y_anchor_ = _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](
@@ -286,8 +306,6 @@ class AbstractWindow(ABC):
         x_: int = self.get_x(x) + x_anchor_ + x_shift
 
         # handle y overflow
-        if clip_overflow_y is None:
-            clip_overflow_y = False if isinstance(y, int) else "outer" if y.endswith("outer") else "inner"
         top_clip = 0
         bottom_clip = None
         if clip_overflow_y:
@@ -297,8 +315,6 @@ class AbstractWindow(ABC):
             raise errors.WindowOverflowError()
 
         # handle x overflow
-        if clip_overflow_x is None:
-            clip_overflow_x = False if isinstance(x, int) else "outer" if x.endswith("outer") else "inner"
         left_clip = 0
         right_clip = None
         if clip_overflow_x:
