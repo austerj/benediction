@@ -66,7 +66,7 @@ def _map_kwargs(
     )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class LayoutItem(ABC):
     _parent: LayoutItem | Layout
     _window: AbstractWindow | None
@@ -143,7 +143,7 @@ class LayoutItem(ABC):
             item.apply(fn)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Column(LayoutItem):
     """Layout column."""
 
@@ -235,7 +235,7 @@ class Column(LayoutItem):
         return self._rows
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Row(LayoutItem):
     """Layout row."""
 
@@ -325,7 +325,7 @@ class Row(LayoutItem):
         return self._cols
 
 
-@dataclass
+@dataclass(slots=True)
 class LayoutItemSubdivider(ABC):
     parent: LayoutItem | LayoutItemSubdivider
     _row: Row | None
@@ -356,7 +356,7 @@ class LayoutItemSubdivider(ABC):
         raise NotImplementedError
 
 
-@dataclass
+@dataclass(slots=True)
 class RowSubdivider(LayoutItemSubdivider):
     parent: Column | ColumnSubdivider
     _row: Row
@@ -377,7 +377,7 @@ class RowSubdivider(LayoutItemSubdivider):
         return ColumnSubdivider(self, self._col)
 
 
-@dataclass
+@dataclass(slots=True)
 class ColumnSubdivider(LayoutItemSubdivider):
     parent: Row | RowSubdivider
     _col: Column
