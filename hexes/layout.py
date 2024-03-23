@@ -9,7 +9,7 @@ from hexes.style import Style, StyleKwargs
 from hexes.window import AbstractWindow
 
 
-class LayoutKwargs(StyleKwargs):
+class LayoutKwargs(StyleKwargs, typing.TypedDict):
     style: typing.NotRequired[Style]
     # margins
     m: typing.NotRequired[int | None]

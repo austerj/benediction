@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import curses
 import typing
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from hexes.color.color import Color, ColorPair_
 
@@ -127,7 +127,7 @@ class Style:
 
     def inherit(self, **kwargs: typing.Unpack[StyleKwargs]):
         """Create new Style overwriting provided fields."""
-        return Style(**_default_to_parent(self, **kwargs))
+        return replace(self, **_default_to_parent(self, **kwargs))
 
 
 Style.default = Style()
