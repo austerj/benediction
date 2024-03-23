@@ -137,7 +137,8 @@ class LayoutItem(ABC):
 
     def apply(self, fn: typing.Callable[[AbstractWindow], typing.Any]):
         """Apply function to all nested windows."""
-        if self._window:
+        # exclude root window
+        if self._window and not isinstance(self._parent, Layout):
             fn(self._window)
         for item in self._items:
             item.apply(fn)
@@ -178,7 +179,7 @@ class Column(LayoutItem):
         if dynamic_height < n_dynamic_rows:
             raise errors.InsufficientSpaceError()
 
-        if self._window:
+        if self._window and not isinstance(self._parent, Layout):
             self._window.set_dimensions(
                 left,
                 top,
@@ -268,7 +269,7 @@ class Row(LayoutItem):
         if dynamic_width < n_dynamic_cols:
             raise errors.InsufficientSpaceError()
 
-        if self._window:
+        if self._window and not isinstance(self._parent, Layout):
             self._window.set_dimensions(
                 left,
                 top,
@@ -402,7 +403,7 @@ class Layout:
     __root: Column | Row | None = field(default=None, init=False)
     __root_window: AbstractWindow | None = field(default=None)
 
-    def __init__(self, __root_window: AbstractWindow, **kwargs: typing.Unpack[LayoutKwargs]):
+    def __init__(self, __root_window: AbstractWindow | None = None, **kwargs: typing.Unpack[LayoutKwargs]):
         self.__root_window = __root_window
         self.kwargs = kwargs
 

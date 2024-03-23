@@ -19,7 +19,8 @@ class Screen:
 
     def clear(self):
         """Clear screen and all layouts."""
-        self.stdscr.clear()
+        # NOTE: screen window (root window) will not be cleared from within layout
+        self.window.clear()
         for layout in self.layouts:
             layout.clear()
 
@@ -29,16 +30,18 @@ class Screen:
 
     def noutrefresh(self):
         """Delayed refresh of screen and all layouts."""
-        self.stdscr.noutrefresh()
+        # NOTE: screen window (root window) will not be refreshed from within layout
+        self.window.noutrefresh()
         for layout in self.layouts:
             layout.noutrefresh()
 
     def update(self):
         """Update screen window and all layouts based on current screen size."""
         height, width = self.stdscr.getmaxyx()
+        # NOTE: screen window (root window) will not have dimensions set from within layout
         self.window.set_dimensions(0, 0, width, height)
         for layout in self.layouts:
-            layout.update(0, 0, height, width)
+            layout.update(0, 0, width, height)
 
     def new_layout(self, **kwargs: typing.Unpack[LayoutKwargs]):
         """Return a new layout managed by the screen."""
