@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from hexes import errors, text
-from hexes.style import Style, StyleKwargs
+from hexes.style import MainStyleKwargs, Style
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -215,6 +215,7 @@ class AbstractWindow(ABC):
         try:
             if not self._win:
                 self.init(left, top, width, height)
+                self.win.bkgd(self.style.win_ch, self.style.win_attr)
             else:
                 self.resize(left, top, width, height)
         except curses.error:
@@ -222,6 +223,8 @@ class AbstractWindow(ABC):
 
     def set_style(self, style: Style):
         self.__style = style
+        if self._win is not None:
+            self.win.bkgd(self.style.win_ch, self.style.win_attr)
         return self
 
     @property
@@ -244,7 +247,7 @@ class AbstractWindow(ABC):
         x_shift: int = 0,
         to_y_shift: int = 0,
         to_x_shift: int = 0,
-        **style_kwargs: typing.Unpack[StyleKwargs],
+        **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
         """Set the attributes in a region."""
         # get region
@@ -277,7 +280,7 @@ class AbstractWindow(ABC):
         wrap_width: int | None = None,
         attr: int | None = None,
         wrap_kwargs: dict[str, typing.Any] = {},
-        **style_kwargs: typing.Unpack[StyleKwargs],
+        **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
         """Add a (multi-line) string to the window."""
         # infer overflow clipping
