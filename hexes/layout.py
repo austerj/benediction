@@ -326,11 +326,12 @@ class Row(LayoutItem):
 
 
 @dataclass
-class RowSubdivider:
-    parent: Column | ColumnSubdivider
-    _row: Row
-    _col: Column | None = field(default=None, init=False)
+class LayoutItemSubdivider(ABC):
+    parent: LayoutItem | LayoutItemSubdivider
+    _row: Row | None
+    _col: Column | None
 
+    @abstractmethod
     def col(
         self,
         window: AbstractWindow | None = None,
@@ -338,10 +339,9 @@ class RowSubdivider:
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new column with fixed or dynamic width."""
-        new_col = self._row.col(window, width, **kwargs)
-        self._col = new_col
-        return self
+        raise NotImplementedError
 
+    @abstractmethod
     def row(
         self,
         window: AbstractWindow | None = None,
@@ -349,6 +349,25 @@ class RowSubdivider:
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new row with fixed or dynamic height."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def subd(self):
+        raise NotImplementedError
+
+
+@dataclass
+class RowSubdivider(LayoutItemSubdivider):
+    parent: Column | ColumnSubdivider
+    _row: Row
+    _col: Column | None = field(default=None, init=False)
+
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
+        new_col = self._row.col(window, width, **kwargs)
+        self._col = new_col
+        return self
+
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         return self.parent.row(window, height, **kwargs)
 
     def subd(self):
@@ -359,27 +378,15 @@ class RowSubdivider:
 
 
 @dataclass
-class ColumnSubdivider:
+class ColumnSubdivider(LayoutItemSubdivider):
     parent: Row | RowSubdivider
     _col: Column
     _row: Row | None = field(default=None, init=False)
 
-    def col(
-        self,
-        window: AbstractWindow | None = None,
-        width: int | float | None = None,
-        **kwargs: typing.Unpack[LayoutKwargs],
-    ):
-        """Add new column with fixed or dynamic width."""
+    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         return self.parent.col(window, width, **kwargs)
 
-    def row(
-        self,
-        window: AbstractWindow | None = None,
-        height: int | float | None = None,
-        **kwargs: typing.Unpack[LayoutKwargs],
-    ):
-        """Add new row with fixed or dynamic height."""
+    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         new_row = self._col.row(window, height, **kwargs)
         self._row = new_row
         return self
