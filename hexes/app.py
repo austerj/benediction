@@ -51,6 +51,7 @@ class Application(ABC):
         height, width = self.screen.stdscr.getmaxyx()
         self.layout.update(0, 0, height, width)
         self.layout.noutrefresh()
+        self.layout.clear()
 
     @abstractmethod
     def refresh(self):

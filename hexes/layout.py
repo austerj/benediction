@@ -71,7 +71,7 @@ class LayoutItem(ABC):
     def clear(self):
         """Clear window and all nested layout items."""
         if self._window:
-            self._window.win.clear()
+            self._window.clear()
         for item in self._items:
             item.clear()
 

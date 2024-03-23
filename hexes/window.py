@@ -347,6 +347,9 @@ class AbstractWindow(ABC):
     def noutrefresh(self):
         raise NotImplementedError
 
+    def clear(self):
+        self.win.clear()
+
     @abstractmethod
     def init(self, left: int, top: int, width: int, height: int):
         raise NotImplementedError
@@ -360,7 +363,6 @@ class AbstractWindow(ABC):
 class Window(AbstractWindow):
     def noutrefresh(self):
         self.win.noutrefresh()
-        self.win.clear()
 
     def init(self, left: int, top: int, width: int, height: int):
         self._win = curses.newwin(height, width, top, left)
@@ -390,7 +392,6 @@ class Pad(AbstractWindow):
 
     def noutrefresh(self):
         self.win.noutrefresh(self.top_shift, self.left_shift, self.top, self.left, self.bottom, self.right)
-        self.win.clear()
 
     def init(self, *args, **kwargs):
         # intrinsic pad size only depends on content size
