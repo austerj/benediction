@@ -153,5 +153,4 @@ class Style:
         )
 
 
-if __name__ == "__main__":
-    Style()
+Style.default = Style()
