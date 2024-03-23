@@ -330,14 +330,14 @@ class ColumnSubdivider:
         return RowSubdivider(self, self._row)
 
 
-@dataclass
+@dataclass(init=False)
 class Layout:
     """Partition screen into a responsive layout of nested rows and columns."""
 
     # root layout node
     __root: Column | Row | None = field(default=None, init=False)
 
-    def __post_init__(self, **kwargs):
+    def __init__(self, **kwargs):
         self.kwargs = kwargs
 
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
