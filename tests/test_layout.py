@@ -223,3 +223,25 @@ def test_layout_order():
     # cannot add column to column-major layout
     with pytest.raises(errors.LayoutError):
         col_layout.col()
+
+
+def test_layout_items():
+    layout = Layout()
+
+    # fmt: off
+    (layout
+        .row().subd()
+            .col(w()).col(w())
+        .row(w())
+    )
+    # fmt: on
+
+    # fmt: off
+    assert [type(x) for x in layout.items] == [
+        Column, # root column
+            Row, # row 0
+                Column, # row 0, column 0
+                Column, # row 0, column 1
+            Row, # row 1
+    ]
+    # fmt: on

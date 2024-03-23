@@ -477,3 +477,16 @@ class Layout:
     def order(self):
         """Order of layout (row / column major)."""
         return "col" if isinstance(self.__root, Column) else "row" if isinstance(self.__root, Row) else None
+
+    @property
+    def items(self) -> list[Row | Column]:
+        """Flattened list of all layout items."""
+        items = []
+
+        def append_items(outer_item: LayoutItem):
+            items.append(outer_item)
+            for inner_item in outer_item._items:
+                append_items(inner_item)
+
+        append_items(self.root)
+        return items
