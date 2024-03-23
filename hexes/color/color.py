@@ -18,9 +18,6 @@ class Color(int):
     def __new__(cls, number: int, *args, **kwargs):
         return super().__new__(cls, number)
 
-    def __post_init__(self):
-        curses.init_color(self.number, (self.red * 1000) // 255, (self.green * 1000) // 255, (self.blue * 1000) // 255)
-
 
 @dataclass(frozen=True)
 class ColorPair(int):
@@ -29,21 +26,22 @@ class ColorPair(int):
     background: Color
 
     def __new__(cls, number: int, *args, **kwargs):
-        return super().__new__(cls, curses.color_pair(number))
-
-    def __post_init__(self):
-        curses.init_pair(self.number, self.foreground, self.background)
+        return super().__new__(cls, 0 if number <= 0 else curses.color_pair(number))
 
 
-# exposed color classes that internally manages unique colors
+# exposed color classes that internally manages uniqueness
 class Color_:
     __colors: dict[RGB, Color] = dict()
+    default = Color(-1, None, None, None)  # type: ignore
 
     def __new__(cls, red: int = 0, green: int = 0, blue: int = 0):
         rgb = red, green, blue
         # add new color or retrieve existing
         if rgb not in cls.__colors:
-            cls.__colors[rgb] = Color(len(cls.__colors), *rgb)
+            number = len(cls.__colors)
+            cls.__colors[rgb] = Color(number, *rgb)
+            # init new color definition (mapping 0-255 to curses range 0-1000)
+            curses.init_color(number, *[(x * 1_000) // 255 for x in rgb])
         return cls.__colors[rgb]
 
     @classmethod
@@ -67,6 +65,7 @@ class Color_:
 
 class ColorPair_:
     __pairs: dict[tuple[Color, Color], ColorPair] = dict()
+    default: ColorPair = ColorPair(0, None, None)  # type: ignore
 
     def __new__(cls, foreground: Color | RGB, background: Color | RGB):
         # retrieve colors
@@ -77,6 +76,8 @@ class ColorPair_:
         # add new pair or retrieve existing
         pair_key = (foreground, background)
         if pair_key not in cls.__pairs:
-            # NOTE: need to start pair number from 1 due to 0 being reserved for black-on-white
-            cls.__pairs[pair_key] = ColorPair(len(cls.__pairs) + 1, foreground, background)
+            # NOTE: need to start pair number from 1 due to 0 being reserved for white-on-black
+            number = len(cls.__pairs) + 1
+            cls.__pairs[pair_key] = ColorPair(number, foreground, background)
+            curses.init_pair(number, foreground, background)
         return cls.__pairs[pair_key]
