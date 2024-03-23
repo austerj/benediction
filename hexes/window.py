@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from hexes import errors, text
+from hexes.color.color import Color, Color_, ColorPair_
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -257,7 +258,6 @@ class AbstractWindow(ABC):
         x: int | HorizontalPosition = "left",
         y_anchor: VerticalAnchor | None = None,
         x_anchor: HorizontalAnchor | None = None,
-        attr: int | None = None,
         y_shift: int = 0,
         x_shift: int = 0,
         clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
@@ -265,6 +265,9 @@ class AbstractWindow(ABC):
         ignore_overflow: bool = False,
         alignment: text.HorizontalAlignment | None = "left",
         wrap_width: int | None = None,
+        fg: Color | None = None,
+        bg: Color | None = None,
+        attr: int | None = None,
         **wrap_kwargs,
     ):
         """Add a (multi-line) string to the window."""
@@ -326,6 +329,12 @@ class AbstractWindow(ABC):
         # shift base coordinates by overflow
         y_ += top_clip
         x_ += left_clip
+
+        # construct attr
+        if fg or bg:
+            if attr is not None:
+                raise errors.ColorError("Cannot provide foreground or background colors if attr is specified.")
+            attr = ColorPair_(Color_.default if fg is None else fg, Color_.default if bg is None else bg)
 
         # add row by row from y_ and down
         for i, row in enumerate(strs[top_clip:bottom_clip]):
