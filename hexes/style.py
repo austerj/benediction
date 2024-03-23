@@ -59,6 +59,28 @@ def _default_to_parent(parent: Style, **kwargs):
     return {k: (getattr(parent, k) if v is None else v) for k, v in kwargs.items()}
 
 
+class StyleKwargs(typing.TypedDict):
+    fg: typing.NotRequired[Color | None]
+    bg: typing.NotRequired[Color | None]
+    alternate_character_set: typing.NotRequired[bool | None]
+    blink: typing.NotRequired[bool | None]
+    bold: typing.NotRequired[bool | None]
+    dim: typing.NotRequired[bool | None]
+    invisible: typing.NotRequired[bool | None]
+    italic: typing.NotRequired[bool | None]
+    normal: typing.NotRequired[bool | None]
+    protected_mode: typing.NotRequired[bool | None]
+    reverse_colors: typing.NotRequired[bool | None]
+    standout_mode: typing.NotRequired[bool | None]
+    underline_mode: typing.NotRequired[bool | None]
+    highlight_horizontal: typing.NotRequired[bool | None]
+    highlight_left: typing.NotRequired[bool | None]
+    highlight_low: typing.NotRequired[bool | None]
+    highlight_right: typing.NotRequired[bool | None]
+    highlight_top: typing.NotRequired[bool | None]
+    highlight_vertical: typing.NotRequired[bool | None]
+
+
 @dataclass(frozen=True, slots=True)
 class Style:
     default: typing.ClassVar[Style]
@@ -103,54 +125,9 @@ class Style:
         else:
             return self._attr
 
-    def inherit(
-        self,
-        fg: Color | None = None,
-        bg: Color | None = None,
-        *,
-        alternate_character_set: bool | None = None,
-        blink: bool | None = None,
-        bold: bool | None = None,
-        dim: bool | None = None,
-        invisible: bool | None = None,
-        italic: bool | None = None,
-        normal: bool | None = None,
-        protected_mode: bool | None = None,
-        reverse_colors: bool | None = None,
-        standout_mode: bool | None = None,
-        underline_mode: bool | None = None,
-        highlight_horizontal: bool | None = None,
-        highlight_left: bool | None = None,
-        highlight_low: bool | None = None,
-        highlight_right: bool | None = None,
-        highlight_top: bool | None = None,
-        highlight_vertical: bool | None = None,
-    ):
+    def inherit(self, **kwargs: typing.Unpack[StyleKwargs]):
         """Create new Style overwriting provided fields."""
-        return Style(
-            **_default_to_parent(
-                self,
-                fg=fg,
-                bg=bg,
-                alternate_character_set=alternate_character_set,
-                blink=blink,
-                bold=bold,
-                dim=dim,
-                invisible=invisible,
-                italic=italic,
-                normal=normal,
-                protected_mode=protected_mode,
-                reverse_colors=reverse_colors,
-                standout_mode=standout_mode,
-                underline_mode=underline_mode,
-                highlight_horizontal=highlight_horizontal,
-                highlight_left=highlight_left,
-                highlight_low=highlight_low,
-                highlight_right=highlight_right,
-                highlight_top=highlight_top,
-                highlight_vertical=highlight_vertical,
-            )
-        )
+        return Style(**_default_to_parent(self, **kwargs))
 
 
 Style.default = Style()

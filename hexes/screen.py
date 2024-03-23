@@ -1,7 +1,8 @@
 import curses
+import typing
 from dataclasses import dataclass, field
 
-from hexes.layout import Layout
+from hexes.layout import Layout, LayoutKwargs
 from hexes.window import ScreenWindow
 
 
@@ -39,7 +40,7 @@ class Screen:
         for layout in self.layouts:
             layout.update(0, 0, height, width)
 
-    def new_layout(self, **kwargs):
+    def new_layout(self, **kwargs: typing.Unpack[LayoutKwargs]):
         """Return a new layout managed by the screen."""
         layout = Layout(**kwargs)
         self.layouts.append(layout)

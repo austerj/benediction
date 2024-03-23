@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from hexes import errors, text
-from hexes.style import Style
+from hexes.style import Style, StyleKwargs
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -244,7 +244,7 @@ class AbstractWindow(ABC):
         x_shift: int = 0,
         to_y_shift: int = 0,
         to_x_shift: int = 0,
-        **style_kwargs,
+        **style_kwargs: typing.Unpack[StyleKwargs],
     ):
         """Set the attributes in a region."""
         # get region
@@ -277,7 +277,7 @@ class AbstractWindow(ABC):
         wrap_width: int | None = None,
         attr: int | None = None,
         wrap_kwargs: dict[str, typing.Any] = {},
-        **style_kwargs,
+        **style_kwargs: typing.Unpack[StyleKwargs],
     ):
         """Add a (multi-line) string to the window."""
         # infer overflow clipping

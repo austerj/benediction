@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import curses
+import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from hexes.layout import LayoutKwargs
 from hexes.screen import Screen
 
 
@@ -44,7 +46,7 @@ class Application(ABC):
         self.screen.update()
         self.screen.noutrefresh()
 
-    def new_layout(self, **kwargs):
+    def new_layout(self, **kwargs: typing.Unpack[LayoutKwargs]):
         """Return a new layout managed by the application screen."""
         return self.screen.new_layout(**kwargs)
 
