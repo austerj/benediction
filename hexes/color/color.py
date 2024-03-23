@@ -1,4 +1,5 @@
 import curses
+import typing
 from dataclasses import dataclass, field
 
 from hexes import errors
@@ -52,6 +53,15 @@ class Color_:
         except KeyError:
             raise errors.ColorError("Tailwind color not found.")
         return cls(*rgb)  # type: ignore
+
+    @classmethod
+    def tws(
+        cls,
+        name: tailwind.NAME,
+        shades: typing.Sequence[tailwind.SHADE] = (50, 100, 200, 300, 400, 500, 600, 700, 800, 900),
+    ) -> tuple[Color, ...]:
+        """Get shades of named Tailwind color."""
+        return tuple(cls.tw(f"{name}-{shade}") for shade in shades)  # type: ignore
 
     @classmethod
     def x11(cls, color: x11.COLOR) -> Color:

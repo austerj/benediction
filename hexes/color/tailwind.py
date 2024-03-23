@@ -491,3 +491,30 @@ colors: dict[COLOR, tuple[int, int, int]] = {
     "rose-800": (159, 18, 57),
     "rose-900": (136, 19, 55),
 }
+
+NAME = typing.Literal[
+    "slate",
+    "gray",
+    "zinc",
+    "neutral",
+    "stone",
+    "red",
+    "orange",
+    "amber",
+    "yellow",
+    "lime",
+    "green",
+    "emerald",
+    "teal",
+    "cyan",
+    "sky",
+    "blue",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+    "rose",
+]
+
+SHADE = typing.Literal[50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
