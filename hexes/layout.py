@@ -185,7 +185,7 @@ class Column(LayoutItem):
     def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
         if self._window:
             raise RuntimeError("Cannot split column with a window attached into rows.")
-        new_row = Row(self, window, height, **_map_kwargs(style=self._style, **kwargs))
+        new_row = Row(self, window, height, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))
         self._rows.append(new_row)
         return new_row
 
@@ -275,7 +275,7 @@ class Row(LayoutItem):
     def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
         if self._window:
             raise RuntimeError("Cannot split row with a window attached into columns.")
-        new_col = Column(self, window, width, **_map_kwargs(style=self._style, **kwargs))
+        new_col = Column(self, window, width, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))
         self._cols.append(new_col)
         return new_col
 
