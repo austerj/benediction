@@ -4,7 +4,7 @@ import curses
 import typing
 from dataclasses import dataclass, field, replace
 
-from hexes.color.color import Color, ColorPair_
+from hexes.style.color._color import Color, ColorPair_
 
 Attribute = typing.Literal[
     "alternate_character_set",
