@@ -235,7 +235,7 @@ class AbstractWindow(ABC):
 
     def set_style(self, style: Style):
         self.__style = style
-        if self._win is not None:
+        if self._win:
             self.win.bkgd(self.style.win_ch, self.style.win_attr)
         return self
 
@@ -499,7 +499,8 @@ class AbstractWindow(ABC):
         raise NotImplementedError
 
     def clear(self):
-        self.win.clear()
+        if self._win:
+            self._win.clear()
 
     @abstractmethod
     def init(self, left: int, top: int, width: int, height: int):
@@ -513,7 +514,8 @@ class AbstractWindow(ABC):
 @dataclass
 class Window(AbstractWindow):
     def noutrefresh(self):
-        self.win.noutrefresh()
+        if self._win:
+            self._win.noutrefresh()
         return self
 
     def init(self, left: int, top: int, width: int, height: int):
@@ -521,8 +523,9 @@ class Window(AbstractWindow):
         return self
 
     def resize(self, left: int, top: int, width: int, height: int):
-        self.win.resize(height, width)
-        self.win.mvwin(top, left)
+        if self._win:
+            self._win.resize(height, width)
+            self._win.mvwin(top, left)
         return self
 
 
@@ -545,7 +548,8 @@ class Pad(AbstractWindow):
                 self._content_width = max(len(s) for s in self.content)
 
     def noutrefresh(self):
-        self.win.noutrefresh(self.top_shift, self.left_shift, self.top, self.left, self.bottom, self.right)
+        if self._win:
+            self._win.noutrefresh(self.top_shift, self.left_shift, self.top, self.left, self.bottom, self.right)
         return self
 
     def init(self, *args, **kwargs):
