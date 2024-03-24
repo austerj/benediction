@@ -284,8 +284,8 @@ class AbstractWindow(ABC):
     ):
         """Add a (multi-line) string to the window."""
         # infer overflow clipping
-        clip_overflow_y = self._infer_overflow(y) if clip_overflow_y is None else clip_overflow_y
-        clip_overflow_x = self._infer_overflow(x) if clip_overflow_x is None else clip_overflow_x
+        clip_overflow_y = self._infer_overflow_boundary(y) if clip_overflow_y is None else clip_overflow_y
+        clip_overflow_x = self._infer_overflow_boundary(x) if clip_overflow_x is None else clip_overflow_x
 
         # compute base coordinates
         inner_x = clip_overflow_x != "outer"
@@ -354,14 +354,16 @@ class AbstractWindow(ABC):
                 pass
 
     @staticmethod
-    def _infer_overflow_boundary(*xys: int | float | HorizontalPosition | VerticalPosition):
+    def _infer_overflow_boundary(*xys: int | float | HorizontalPosition | VerticalPosition | None):
+        # drop None params
+        xys_ = [xy for xy in xys if xy is not None]
         return (
             # assume no boundary if all values are ints
             False
-            if all(isinstance(xy, int) for xy in xys)
+            if all(isinstance(xy, int) for xy in xys_)
             # assume outer boundary if an explicit outer coordinate was given
             else "outer"
-            if any(isinstance(xy, str) and xy.endswith("outer") for xy in xys)
+            if any(isinstance(xy, str) and xy.endswith("outer") for xy in xys_)
             # else default to inner boundary
             else "inner"
         )
