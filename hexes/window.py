@@ -381,6 +381,16 @@ class AbstractWindow(ABC):
             l, w = (self.left, self.width) if inner else (self.left_outer, self.width_outer)
             return l + round(x * (w - 1))
         return x if isinstance(x, int) else getattr(self, _XTOPROP[x])
+    
+    def clip_x(self, *xs: int, boundary: OverflowBoundary = "inner"):
+        """Clip x values to overflow boundary."""
+        l, r = (self.left, self.right) if boundary == "inner" else (self.left_outer, self.right_outer)
+        return tuple(max(min(x, l), r) for x in xs)
+    
+    def clip_y(self, *ys: int, boundary: OverflowBoundary = "inner"):
+        """Clip y values to overflow boundary."""
+        t, b = (self.top, self.bottom) if boundary == "inner" else (self.top_outer, self.bottom_outer)
+        return tuple(max(min(y, t), b) for y in ys)
 
     def y_overflows(self, *ys: int | VerticalPosition, boundary: OverflowBoundary = "inner"):
         """Test if y overflows the inner or outer window boundary."""
