@@ -352,10 +352,19 @@ class AbstractWindow(ABC):
                     self.win.addstr(y_ + i, x_, row[left_clip:right_clip], style_.attr)
             except curses.error:
                 pass
-    
+
     @staticmethod
-    def _infer_overflow(xy: int | float | HorizontalPosition | VerticalPosition):
-        return False if isinstance(xy, int) else "outer" if isinstance(xy, str) and xy.endswith("outer") else "inner"
+    def _infer_overflow_boundary(*xys: int | float | HorizontalPosition | VerticalPosition):
+        return (
+            # assume no boundary if all values are ints
+            False
+            if all(isinstance(xy, int) for xy in xys)
+            # assume outer boundary if an explicit outer coordinate was given
+            else "outer"
+            if any(isinstance(xy, str) and xy.endswith("outer") for xy in xys)
+            # else default to inner boundary
+            else "inner"
+        )
 
     def get_y(self, y: int | float | VerticalPosition, inner: bool = True) -> int:
         """Get vertical position from float (relative to window) or named position."""
