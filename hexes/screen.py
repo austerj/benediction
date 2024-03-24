@@ -3,6 +3,7 @@ import typing
 from dataclasses import dataclass, field
 
 from hexes.layout import Layout, LayoutKwargs
+from hexes.style.color._color import reset_colors
 from hexes.window import ScreenWindow
 
 
@@ -53,8 +54,8 @@ class Screen:
         return self.stdscr.getch()
 
     def _setup(self):
-        # replicate initialization behavior of curses.wrapper
         self._window = ScreenWindow().init()
+        # replicate initialization behavior of curses.wrapper
         curses.noecho()
         curses.cbreak()
         self.stdscr.keypad(True)
@@ -62,7 +63,8 @@ class Screen:
             curses.start_color()
         except:
             pass
-        # setting _win manually - cannot initialize screen window outside initscr
+        # reset global color management state
+        reset_colors()
         return self
 
     def _teardown(self):
@@ -71,6 +73,8 @@ class Screen:
         curses.echo()
         curses.nocbreak()
         curses.endwin()
+        # reset global color management state
+        reset_colors()
 
     @property
     def window(self):

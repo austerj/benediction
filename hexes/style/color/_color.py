@@ -45,7 +45,7 @@ class ColorPair(int):
 # exposed color classes that internally manages uniqueness
 class Color_:
     __using_default_colors: bool = False
-    __colors: dict[RGB, Color] = dict()
+    __colors: dict[RGB, Color] = {}
     default = Color(-1, None, None, None)  # type: ignore
 
     def __new__(cls, red: int = 0, green: int = 0, blue: int = 0):
@@ -91,7 +91,7 @@ class Color_:
 
 
 class ColorPair_:
-    __pairs: dict[tuple[Color, Color], ColorPair] = dict()
+    __pairs: dict[tuple[Color, Color], ColorPair] = {}
     default: ColorPair = ColorPair(0, None, None)  # type: ignore
 
     def __new__(cls, foreground: Color | RGB, background: Color | RGB):
@@ -108,3 +108,10 @@ class ColorPair_:
             cls.__pairs[pair_key] = ColorPair(number, foreground, background)
             curses.init_pair(number, foreground, background)
         return cls.__pairs[pair_key]
+
+
+def reset_colors():
+    """Reset the global state of all color management."""
+    ColorPair_._ColorPair__pairs = {}  # type: ignore
+    Color_._Color__colors = {}  # type: ignore
+    Color_._Color__using_default_colors = False  # type: ignore
