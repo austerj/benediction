@@ -247,17 +247,30 @@ class AbstractWindow(ABC):
         x_shift: int = 0,
         to_y_shift: int = 0,
         to_x_shift: int = 0,
+        clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
+        clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
         """Set the attributes in a region."""
+        # infer overflow clipping
+        clip_overflow_y = self._infer_overflow_boundary(from_y, to_y) if clip_overflow_y is None else clip_overflow_y
+        clip_overflow_x = self._infer_overflow_boundary(from_x, to_x) if clip_overflow_x is None else clip_overflow_x
+
         # get region
         from_y_ = self.get_y(from_y) + y_shift
         from_x_ = self.get_x(from_x) + x_shift
         to_y_ = (from_y_ if to_y is None else self.get_y(to_y)) + to_y_shift
         to_x_ = (from_x_ if to_x is None else self.get_x(to_x)) + to_x_shift
 
-        if self.y_overflows(from_y_, to_y_, boundary="outer") or self.x_overflows(from_x_, to_x_, boundary="outer"):
-            raise errors.WindowOverflowError
+        # handle overflow
+        if clip_overflow_x:
+            from_x_, to_x_ = self.clip_x(from_x_, to_x_, boundary=clip_overflow_x)
+        elif self.x_overflows(from_x_, to_x_, boundary="outer"):
+            raise errors.WindowOverflowError()
+        if clip_overflow_y:
+            from_y_, to_y_ = self.clip_y(from_y_, to_y_, boundary=clip_overflow_y)
+        elif self.y_overflows(from_y_, to_y_, boundary="outer"):
+            raise errors.WindowOverflowError()
 
         # apply attribute to each row of region
         num = max(to_x_ - from_x_ + 1, 0)
@@ -381,16 +394,16 @@ class AbstractWindow(ABC):
             l, w = (self.left, self.width) if inner else (self.left_outer, self.width_outer)
             return l + round(x * (w - 1))
         return x if isinstance(x, int) else getattr(self, _XTOPROP[x])
-    
+
     def clip_x(self, *xs: int, boundary: OverflowBoundary = "inner"):
         """Clip x values to overflow boundary."""
         l, r = (self.left, self.right) if boundary == "inner" else (self.left_outer, self.right_outer)
-        return tuple(max(min(x, l), r) for x in xs)
-    
+        return tuple(min(max(x, l), r) for x in xs)
+
     def clip_y(self, *ys: int, boundary: OverflowBoundary = "inner"):
         """Clip y values to overflow boundary."""
         t, b = (self.top, self.bottom) if boundary == "inner" else (self.top_outer, self.bottom_outer)
-        return tuple(max(min(y, t), b) for y in ys)
+        return tuple(min(max(y, t), b) for y in ys)
 
     def y_overflows(self, *ys: int | VerticalPosition, boundary: OverflowBoundary = "inner"):
         """Test if y overflows the inner or outer window boundary."""
