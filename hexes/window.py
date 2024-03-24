@@ -51,6 +51,18 @@ _XTOPROP: dict[HorizontalPosition, str] = {key: key.replace("-", "_") for key in
 _YTOPROP: dict[VerticalPosition, str] = {key: key.replace("-", "_") for key in _YDEFAULTANCHOR.keys()}
 
 
+class WrapKwargs(typing.TypedDict):
+    initial_indent: typing.NotRequired[str]
+    subsequent_indent: typing.NotRequired[str]
+    expand_tabs: typing.NotRequired[bool]
+    replace_whitespace: typing.NotRequired[bool]
+    fix_sentence_endings: typing.NotRequired[bool]
+    break_long_words: typing.NotRequired[bool]
+    drop_whitespace: typing.NotRequired[bool]
+    break_on_hyphens: typing.NotRequired[bool]
+    tabsize: typing.NotRequired[int]
+
+
 @dataclass
 class AbstractWindow(ABC):
     """Container class managing the dimenions of a curses window."""
@@ -292,7 +304,7 @@ class AbstractWindow(ABC):
         alignment: text.HorizontalAlignment | None = "left",
         wrap_width: int | None = None,
         attr: int | None = None,
-        wrap_kwargs: dict[str, typing.Any] = {},
+        wrap_kwargs: WrapKwargs = {},
         **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
         """Add a (multi-line) string to the window."""
@@ -305,6 +317,10 @@ class AbstractWindow(ABC):
         inner_y = clip_overflow_y != "outer"
         y_: int = self.get_y(y, inner_y) + self.get_y(y_shift, inner_y)
         x_: int = self.get_x(x, inner_x) + self.get_x(x_shift, inner_x)
+
+        # get anchors
+        y_anchor = y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"
+        x_anchor = x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
 
         # wrap text
         # TODO: infer narrower width based on position / anchor, TBD
@@ -326,8 +342,8 @@ class AbstractWindow(ABC):
             strs = text.align(strs, alignment)
 
         # compute anchors
-        y_ += _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](strs)
-        x_ += _XANCHOR[x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"](strs)
+        y_ += _YANCHOR[y_anchor](strs)
+        x_ += _XANCHOR[x_anchor](strs)
 
         # handle y overflow
         top_clip = 0
