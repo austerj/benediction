@@ -20,13 +20,13 @@ class LayoutKwargs(StyleKwargs, typing.TypedDict):
     ml: typing.NotRequired[int | float | None]
     mr: typing.NotRequired[int | float | None]
     # padding
-    p: typing.NotRequired[int | None]
-    py: typing.NotRequired[int | None]
-    px: typing.NotRequired[int | None]
-    pt: typing.NotRequired[int | None]
-    pb: typing.NotRequired[int | None]
-    pl: typing.NotRequired[int | None]
-    pr: typing.NotRequired[int | None]
+    p: typing.NotRequired[int | float | None]
+    py: typing.NotRequired[int | float | None]
+    px: typing.NotRequired[int | float | None]
+    pt: typing.NotRequired[int | float | None]
+    pb: typing.NotRequired[int | float | None]
+    pl: typing.NotRequired[int | float | None]
+    pr: typing.NotRequired[int | float | None]
 
 
 def _map_kwargs(
@@ -39,13 +39,13 @@ def _map_kwargs(
     ml: int | float | None = None,
     mr: int | float | None = None,
     # padding
-    p: int | None = None,
-    py: int | None = None,
-    px: int | None = None,
-    pt: int | None = None,
-    pb: int | None = None,
-    pl: int | None = None,
-    pr: int | None = None,
+    p: int | float | None = None,
+    py: int | float | None = None,
+    px: int | float | None = None,
+    pt: int | float | None = None,
+    pb: int | float | None = None,
+    pl: int | float | None = None,
+    pr: int | float | None = None,
     # style
     style: Style = Style.default,
     **style_kwargs: typing.Unpack[StyleKwargs],
@@ -76,10 +76,10 @@ class LayoutItem(ABC):
     _margin_right: int | float = field(default=0, repr=False, kw_only=True)
     _margin_bottom: int | float = field(default=0, repr=False, kw_only=True)
     # padding
-    _padding_left: int = field(default=0, repr=False, kw_only=True)
-    _padding_top: int = field(default=0, repr=False, kw_only=True)
-    _padding_right: int = field(default=0, repr=False, kw_only=True)
-    _padding_bottom: int = field(default=0, repr=False, kw_only=True)
+    _padding_left: int | float = field(default=0, repr=False, kw_only=True)
+    _padding_top: int | float = field(default=0, repr=False, kw_only=True)
+    _padding_right: int | float = field(default=0, repr=False, kw_only=True)
+    _padding_bottom: int | float = field(default=0, repr=False, kw_only=True)
     # style
     _style: Style = field(default=Style.default, repr=False, kw_only=True)
 
@@ -147,15 +147,36 @@ class LayoutItem(ABC):
     def _outer_dims(self, left: int, top: int, width: int, height: int):
         """Compute outer left, top, width and height."""
         ml, mt, mr, mb = (
-            self._margin_left if isinstance(self._margin_left, int) else round(self._margin_left * width),
-            self._margin_top if isinstance(self._margin_top, int) else round(self._margin_top * height),
-            self._margin_right if isinstance(self._margin_right, int) else round(self._margin_right * width),
-            self._margin_bottom if isinstance(self._margin_bottom, int) else round(self._margin_bottom * height),
+            self._margin_left if isinstance(self._margin_left, int) else int(self._margin_left * width),
+            self._margin_top if isinstance(self._margin_top, int) else int(self._margin_top * height),
+            self._margin_right if isinstance(self._margin_right, int) else int(self._margin_right * width),
+            self._margin_bottom if isinstance(self._margin_bottom, int) else int(self._margin_bottom * height),
         )
+        if width < ml + mr:
+            raise errors.InsufficientSpaceError("Margins cannot exceed window width.")
+        elif height < mt + mb:
+            raise errors.InsufficientSpaceError("Margins cannot exceed window height.")
         left, top, width, height = left + ml, top + mt, width - (ml + mr), height - (mt + mb)
-        if left > width or top > height:
-            raise errors.InsufficientSpaceError()
         return left, top, width, height
+
+    def _padding(self, width: int, height: int):
+        """Compute window padding for left, top, right and bottom."""
+        return (
+            self._padding_left if isinstance(self._padding_left, int) else int(self._padding_left * width),
+            self._padding_top if isinstance(self._padding_top, int) else int(self._padding_top * height),
+            self._padding_right if isinstance(self._padding_right, int) else int(self._padding_right * width),
+            self._padding_bottom if isinstance(self._padding_bottom, int) else int(self._padding_bottom * height),
+        )
+
+    def _set_dimensions(self, left: int, top: int, width: int, height: int):
+        """Set dimensions for item window."""
+        if self._window is not None and not isinstance(self._window, ScreenWindow):
+            pl, pt, pr, pb = self._padding(width, height)
+            if width < pl + pr:
+                raise errors.InsufficientSpaceError("Padding cannot exceed window width.")
+            elif height < pt + pb:
+                raise errors.InsufficientSpaceError("Padding cannot exceed window height.")
+            self._window.set_dimensions(left, top, width, height, pl, pt, pr, pb)
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,8 +188,9 @@ class Column(LayoutItem):
     _rows: list[Row] = field(default_factory=list, init=False)
 
     def update(self, left: int, top: int, width: int, height: int):
-        # incorporate margins
+        # incorporate margins and set window dimensions
         left, top, width, height = self._outer_dims(left, top, width, height)
+        self._set_dimensions(left, top, width, height)
 
         # track allocation of height
         top_ = top
@@ -189,18 +211,6 @@ class Column(LayoutItem):
         # raise if unable to allocate at least 1 height unit per row
         if dynamic_height < n_dynamic_rows:
             raise errors.InsufficientSpaceError()
-
-        if self._window and not isinstance(self._window, ScreenWindow):
-            self._window.set_dimensions(
-                left,
-                top,
-                width,
-                height,
-                self._padding_left,
-                self._padding_top,
-                self._padding_right,
-                self._padding_bottom,
-            )
 
         # allocate height across rows
         for row in self._rows:
@@ -254,8 +264,9 @@ class Row(LayoutItem):
     _cols: list[Column] = field(default_factory=list, init=False)
 
     def update(self, left: int, top: int, width: int, height: int):
-        # incorporate margins
+        # incorporate margins and set window dimensions
         left, top, width, height = self._outer_dims(left, top, width, height)
+        self._set_dimensions(left, top, width, height)
 
         # track allocation of width
         left_ = left
@@ -276,18 +287,6 @@ class Row(LayoutItem):
         # raise if unable to allocate at least 1 width unit per row
         if dynamic_width < n_dynamic_cols:
             raise errors.InsufficientSpaceError()
-
-        if self._window and not isinstance(self._window, ScreenWindow):
-            self._window.set_dimensions(
-                left,
-                top,
-                width,
-                height,
-                self._padding_left,
-                self._padding_top,
-                self._padding_right,
-                self._padding_bottom,
-            )
 
         # allocate width across cols
         for col in self._cols:
