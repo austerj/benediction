@@ -287,7 +287,7 @@ class AbstractWindow(ABC):
         # apply attribute to each row of region
         num = max(to_x_ - from_x_ + 1, 0)
         for y in range(from_y_, to_y_ + 1):
-            self.win.chgat(y, from_x_, num, self.style.inherit(**style_kwargs).attr)
+            self.win.chgat(y, from_x_, num, self.style.derive(**style_kwargs).attr)
 
     def addstr(
         self,
@@ -430,7 +430,7 @@ class AbstractWindow(ABC):
             attr_ = attr
         else:
             # inherit from window style if any kwargs were provided
-            attr_ = (self.style.inherit(**style_kwargs) if style_kwargs else self.style).attr
+            attr_ = (self.style.derive(**style_kwargs) if style_kwargs else self.style).attr
 
         # add row by row from y_ and down
         for i, row in enumerate(strs[top_clip:bottom_clip]):

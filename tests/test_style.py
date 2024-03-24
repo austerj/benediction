@@ -24,7 +24,7 @@ def test_inheritance():
     assert parent_style.attr == curses.A_BOLD
 
     # inheriting from parent style combines flags
-    assert parent_style.inherit(italic=True).attr == curses.A_BOLD | curses.A_ITALIC
+    assert parent_style.derive(italic=True).attr == curses.A_BOLD | curses.A_ITALIC
 
     # but disabling flag will replace parent flag
-    assert parent_style.inherit(italic=True, bold=False).attr == curses.A_ITALIC
+    assert parent_style.derive(italic=True, bold=False).attr == curses.A_ITALIC

@@ -192,8 +192,8 @@ class Style:
         else:
             return self._win_attr
 
-    def inherit(self, **kwargs: typing.Unpack[StyleKwargs]):
-        """Create new Style overwriting provided fields."""
+    def derive(self, **kwargs: typing.Unpack[StyleKwargs]):
+        """Create new Style derived from existing fields that are not replaced."""
         return replace(self, **_default_to_parent(self, **kwargs))
 
 

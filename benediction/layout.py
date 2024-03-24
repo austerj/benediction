@@ -62,7 +62,7 @@ def _map_kwargs(
         _padding_left=pl if pl is not None else px if px is not None else p if p is not None else 0,
         _padding_right=pr if pr is not None else px if px is not None else p if p is not None else 0,
         # style
-        _style=style.inherit(**style_kwargs),
+        _style=style.derive(**style_kwargs),
     )
 
 
