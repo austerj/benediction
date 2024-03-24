@@ -5,25 +5,36 @@ class HexesError(Exception, ABC):
     ...
 
 
-class InsufficientSpaceError(HexesError):
-    ...
-
-
-class WindowOverflowError(HexesError):
-    ...
-
-
-class WindowNotInitializedError(HexesError):
-    ...
-
-
-class UnboundWindowError(HexesError):
-    ...
-
-
+# errors raised by / related to layouts
 class LayoutError(HexesError):
     ...
 
 
-class ColorError(HexesError):
+class InsufficientSpaceError(LayoutError):
+    ...
+
+
+class UnboundWindowError(LayoutError):
+    ...
+
+
+# errors raised by / related to windows
+class WindowError(HexesError):
+    ...
+
+
+class WindowOverflowError(WindowError):
+    ...
+
+
+class WindowNotInitializedError(WindowError):
+    ...
+
+
+# errors raised by / related to styles
+class StyleError(HexesError):
+    ...
+
+
+class ColorError(StyleError):
     ...
