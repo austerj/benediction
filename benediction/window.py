@@ -7,8 +7,8 @@ import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from hexes import errors, text
-from hexes.style import MainStyleKwargs, Style
+from benediction import errors, text
+from benediction.style import MainStyleKwargs, Style
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -263,7 +263,7 @@ class AbstractWindow(ABC):
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
-        """Set the attributes in a region."""
+        """Set attributes in a region."""
         # infer overflow clipping
         clip_overflow_y = self._infer_overflow_boundary(from_y, to_y) if clip_overflow_y is None else clip_overflow_y
         clip_overflow_x = self._infer_overflow_boundary(from_x, to_x) if clip_overflow_x is None else clip_overflow_x

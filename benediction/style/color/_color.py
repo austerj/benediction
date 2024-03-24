@@ -4,8 +4,8 @@ import curses
 import typing
 from dataclasses import dataclass, field
 
-from hexes import errors
-from hexes.style.color import tailwind, x11
+from benediction import errors
+from benediction.style.color import tailwind, x11
 
 RGB = tuple[int, int, int]
 

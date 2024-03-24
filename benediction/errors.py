@@ -1,12 +1,12 @@
 from abc import ABC
 
 
-class HexesError(Exception, ABC):
+class BenedictionError(Exception, ABC):
     ...
 
 
 # errors raised by / related to layouts
-class LayoutError(HexesError):
+class LayoutError(BenedictionError):
     ...
 
 
@@ -19,7 +19,7 @@ class UnboundWindowError(LayoutError):
 
 
 # errors raised by / related to windows
-class WindowError(HexesError):
+class WindowError(BenedictionError):
     ...
 
 
@@ -32,7 +32,7 @@ class WindowNotInitializedError(WindowError):
 
 
 # errors raised by / related to styles
-class StyleError(HexesError):
+class StyleError(BenedictionError):
     ...
 
 

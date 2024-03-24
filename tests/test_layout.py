@@ -1,8 +1,8 @@
 import pytest
 
-from hexes import errors
-from hexes.layout import Column, Layout, Row
-from hexes.window import Window
+from benediction import errors
+from benediction.layout import Column, Layout, Row
+from benediction.window import Window
 
 
 def check_dimensions(item: Row | Column, width: int | float, height: int | float):

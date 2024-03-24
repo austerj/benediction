@@ -2,9 +2,9 @@ import curses
 import typing
 from dataclasses import dataclass, field
 
-from hexes.layout import Layout, LayoutKwargs
-from hexes.style.color._color import reset_colors
-from hexes.window import ScreenWindow
+from benediction.layout import Layout, LayoutKwargs
+from benediction.style.color._color import reset_colors
+from benediction.window import ScreenWindow
 
 
 @dataclass(slots=True)

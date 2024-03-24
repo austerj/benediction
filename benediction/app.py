@@ -5,8 +5,8 @@ import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from hexes.layout import LayoutKwargs
-from hexes.screen import Screen
+from benediction.layout import LayoutKwargs
+from benediction.screen import Screen
 
 
 @dataclass

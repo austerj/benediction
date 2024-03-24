@@ -1,6 +1,6 @@
 import curses
 
-from hexes.style import Style
+from benediction.style import Style
 
 
 # NOTE: unable to test colors as this requires initscr to register pairs

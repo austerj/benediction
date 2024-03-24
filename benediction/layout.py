@@ -4,9 +4,9 @@ import typing
 from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 
-from hexes import errors
-from hexes.style import Style, StyleKwargs
-from hexes.window import AbstractWindow, ScreenWindow
+from benediction import errors
+from benediction.style import Style, StyleKwargs
+from benediction.window import AbstractWindow, ScreenWindow
 
 
 class LayoutKwargs(StyleKwargs, typing.TypedDict):

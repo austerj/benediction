@@ -1,4 +1,4 @@
-from hexes.text import align, simple_wrap
+from benediction.text import align, simple_wrap
 
 test_strs = [
     "  HEYY",
@@ -8,7 +8,7 @@ test_strs = [
 test_str = "ABC DEFG  HI JKLMN O PQ"
 
 
-def test_left_align():
+def test_align():
     assert align(test_strs, "left") == [
         "HEYY    ",
         "WHAT TTT",

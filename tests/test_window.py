@@ -1,7 +1,7 @@
 import pytest
 
-from hexes import errors
-from hexes.window import Window
+from benediction import errors
+from benediction.window import Window
 
 
 def test_overflow():
