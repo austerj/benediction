@@ -490,3 +490,8 @@ class Layout:
 
         append_items(self.root)
         return items
+
+    @property
+    def windows(self) -> list[AbstractWindow]:
+        """Flattened list of all layout windows."""
+        return [item._window for item in self.items if item._window is not None]

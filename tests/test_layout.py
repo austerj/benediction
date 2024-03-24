@@ -245,3 +245,13 @@ def test_layout_items():
             Row, # row 1
     ]
     # fmt: on
+
+    # fmt: off
+    assert [type(x) for x in layout.windows] == [
+        # ScreenWindow, # root column
+            # Row, # row 0
+                Window, # row 0, column 0
+                Window, # row 0, column 1
+            Window, # row 1
+    ]
+    # fmt: on
