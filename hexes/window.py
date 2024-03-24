@@ -51,7 +51,7 @@ _XTOPROP: dict[HorizontalPosition, str] = {key: key.replace("-", "_") for key in
 _YTOPROP: dict[VerticalPosition, str] = {key: key.replace("-", "_") for key in _YDEFAULTANCHOR.keys()}
 
 
-class WrapKwargs(typing.TypedDict):
+class TextWrapKwargs(typing.TypedDict):
     initial_indent: typing.NotRequired[str]
     subsequent_indent: typing.NotRequired[str]
     expand_tabs: typing.NotRequired[bool]
@@ -302,9 +302,10 @@ class AbstractWindow(ABC):
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         ignore_overflow: bool = False,
         alignment: text.HorizontalAlignment | None = "left",
+        wrap: typing.Literal["simple", "textwrap", False] = "textwrap",
         wrap_width: int | None = None,
+        textwrap_kwargs: TextWrapKwargs = {},
         attr: int | None = None,
-        wrap_kwargs: WrapKwargs = {},
         **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
         """Add a (multi-line) string to the window."""
@@ -323,17 +324,60 @@ class AbstractWindow(ABC):
         x_anchor = x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
 
         # wrap text
-        # TODO: infer narrower width based on position / anchor, TBD
         if isinstance(str_, str):
-            strs = textwrap.wrap(
-                str_,
-                wrap_width
-                if wrap_width is not None
-                else self.width
-                if clip_overflow_x == "inner"
-                else self.width_outer,
-                **wrap_kwargs,
-            )
+            # skip wrapping
+            if wrap == False:
+                strs = [str_]
+            else:
+                # infer wrap width s.t. lines wrap at point of horizontal overflow
+                if wrap_width is None:
+                    if x_anchor == "left":
+                        r = self.right_outer if x_anchor.endswith("outer") else self.right
+                        wrap_width = r - x_ + 1
+                    elif x_anchor == "right":
+                        l = self.left_outer if x_anchor.endswith("outer") else self.left
+                        wrap_width = x_ - l + 1
+                    else:
+                        # NOTE: this ties directly to the middle anchor "rounding down", which leads
+                        # to the string always growing to the right first (when the number of chars
+                        # is even) - so the width here corresponds to the minimum of where the
+                        # string would overflow on either side given this pattern, e.g.:
+                        #
+                        #  ... 2 3 4 5 6 7 8 ...
+                        # LEFT |   x       | RIGHT
+                        #      | _ _ _     |
+                        #      | _ _ _ _   |
+                        #      _ _ _ _ _   |
+                        #      _ _ _ _ _ _ |
+                        #    _ _ _ _ _ _ _ |
+                        #    _ _ _ _ _ _ _ _
+                        #
+                        # x  L   R   W
+                        # ------------
+                        # ...
+                        # 7  11  2   4
+                        # 6  9   4   6
+                        # 5  7   6   6
+                        # 4  5   8   5
+                        # 3  3   10  3
+                        # ...
+                        #
+                        # with x being the position, L/R the left/right char limit and W the width
+                        r = self.right_outer if x_anchor.endswith("outer") else self.right
+                        l = self.left_outer if x_anchor.endswith("outer") else self.left
+                        wrap_width = min(
+                            2 * (x_ - l) + 1,
+                            2 * (r - x_),
+                        )
+                wrap_width = max(wrap_width, 1)
+                if wrap == "textwrap":
+                    strs = textwrap.wrap(
+                        str_,
+                        wrap_width,
+                        **textwrap_kwargs,
+                    )
+                else:
+                    strs = text.simple_wrap(str_, wrap_width)
         else:
             strs = str_
 
