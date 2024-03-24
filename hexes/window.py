@@ -284,14 +284,14 @@ class AbstractWindow(ABC):
     ):
         """Add a (multi-line) string to the window."""
         # infer overflow clipping
-        if clip_overflow_y is None:
-            clip_overflow_y = (
-                False if isinstance(y, int) else "outer" if isinstance(y, str) and y.endswith("outer") else "inner"
-            )
-        if clip_overflow_x is None:
-            clip_overflow_x = (
-                False if isinstance(x, int) else "outer" if isinstance(x, str) and x.endswith("outer") else "inner"
-            )
+        clip_overflow_y = self._infer_overflow(y) if clip_overflow_y is None else clip_overflow_y
+        clip_overflow_x = self._infer_overflow(x) if clip_overflow_x is None else clip_overflow_x
+
+        # compute base coordinates
+        inner_x = clip_overflow_x != "outer"
+        inner_y = clip_overflow_y != "outer"
+        y_: int = self.get_y(y, inner_y) + self.get_y(y_shift, inner_y)
+        x_: int = self.get_x(x, inner_x) + self.get_x(x_shift, inner_x)
 
         # wrap text
         # TODO: infer narrower width based on position / anchor, TBD
@@ -313,17 +313,8 @@ class AbstractWindow(ABC):
             strs = text.align(strs, alignment)
 
         # compute anchors
-        y_anchor_ = _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](
-            strs
-        )
-        x_anchor_ = _XANCHOR[
-            x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
-        ](strs)
-
-        # compute base coordinates
-        inner = clip_overflow_y != "outer"
-        y_: int = self.get_y(y, inner) + y_anchor_ + self.get_y(y_shift, inner)
-        x_: int = self.get_x(x, inner) + x_anchor_ + self.get_x(x_shift, inner)
+        y_ += _YANCHOR[y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"](strs)
+        x_ += _XANCHOR[x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"](strs)
 
         # handle y overflow
         top_clip = 0
@@ -361,6 +352,10 @@ class AbstractWindow(ABC):
                     self.win.addstr(y_ + i, x_, row[left_clip:right_clip], style_.attr)
             except curses.error:
                 pass
+    
+    @staticmethod
+    def _infer_overflow(xy: int | float | HorizontalPosition | VerticalPosition):
+        return False if isinstance(xy, int) else "outer" if isinstance(xy, str) and xy.endswith("outer") else "inner"
 
     def get_y(self, y: int | float | VerticalPosition, inner: bool = True) -> int:
         """Get vertical position from float (relative to window) or named position."""
