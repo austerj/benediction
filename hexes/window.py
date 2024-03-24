@@ -367,18 +367,20 @@ class AbstractWindow(ABC):
         y_ += top_clip
         x_ += left_clip
 
-        # inherit from window style if any kwargs were provided
-        style_ = self.style.inherit(**style_kwargs) if style_kwargs else self.style
+        if attr is not None:
+            if style_kwargs:
+                raise ValueError("Cannot use explicit 'attr' together with style keyword arguments.")
+            attr_ = attr
+        else:
+            # inherit from window style if any kwargs were provided
+            attr_ = (self.style.inherit(**style_kwargs) if style_kwargs else self.style).attr
 
         # add row by row from y_ and down
         for i, row in enumerate(strs[top_clip:bottom_clip]):
             # NOTE: suppressing curses error due to exception when printing to bottom right corner
             # see https://github.com/python/cpython/issues/52490
             try:
-                if attr is not None:
-                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip], style_.attr)
-                else:
-                    self.win.addstr(y_ + i, x_, row[left_clip:right_clip], style_.attr)
+                self.win.addstr(y_ + i, x_, row[left_clip:right_clip], attr_)
             except curses.error:
                 pass
 
