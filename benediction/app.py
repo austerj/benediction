@@ -24,6 +24,7 @@ _ERRORS: dict[ErrorType, typing.Type[Exception]] = {
 class Application(ABC):
     screen: Screen = field(default_factory=Screen, init=False, repr=False)
     running: bool | None = field(default=None, init=False)
+    allow_rerun: typing.ClassVar[bool] = False
     # assign errors to be ignored during main loop
     suppress_errors: typing.ClassVar[
         typing.Sequence[typing.Type[Exception] | ErrorType] | typing.Type[Exception] | ErrorType | typing.Literal[False]
@@ -46,7 +47,7 @@ class Application(ABC):
 
     def run(self):
         """Run application."""
-        if not self.running is None:
+        if not (self.allow_rerun or self.running is None):
             raise RuntimeError("Application has already been run.")
         try:
             self.running = True
