@@ -12,13 +12,13 @@ from hexes.window import AbstractWindow, ScreenWindow
 class LayoutKwargs(StyleKwargs, typing.TypedDict):
     style: typing.NotRequired[Style]
     # margins
-    m: typing.NotRequired[int | None]
-    my: typing.NotRequired[int | None]
-    mx: typing.NotRequired[int | None]
-    mt: typing.NotRequired[int | None]
-    mb: typing.NotRequired[int | None]
-    ml: typing.NotRequired[int | None]
-    mr: typing.NotRequired[int | None]
+    m: typing.NotRequired[int | float | None]
+    my: typing.NotRequired[int | float | None]
+    mx: typing.NotRequired[int | float | None]
+    mt: typing.NotRequired[int | float | None]
+    mb: typing.NotRequired[int | float | None]
+    ml: typing.NotRequired[int | float | None]
+    mr: typing.NotRequired[int | float | None]
     # padding
     p: typing.NotRequired[int | None]
     py: typing.NotRequired[int | None]
@@ -31,13 +31,13 @@ class LayoutKwargs(StyleKwargs, typing.TypedDict):
 
 def _map_kwargs(
     # margins
-    m: int | None = None,
-    my: int | None = None,
-    mx: int | None = None,
-    mt: int | None = None,
-    mb: int | None = None,
-    ml: int | None = None,
-    mr: int | None = None,
+    m: int | float | None = None,
+    my: int | float | None = None,
+    mx: int | float | None = None,
+    mt: int | float | None = None,
+    mb: int | float | None = None,
+    ml: int | float | None = None,
+    mr: int | float | None = None,
     # padding
     p: int | None = None,
     py: int | None = None,
@@ -71,10 +71,10 @@ class LayoutItem(ABC):
     _parent: LayoutItem | Layout
     _window: AbstractWindow | None
     # margins
-    _margin_left: int = field(default=0, repr=False, kw_only=True)
-    _margin_top: int = field(default=0, repr=False, kw_only=True)
-    _margin_right: int = field(default=0, repr=False, kw_only=True)
-    _margin_bottom: int = field(default=0, repr=False, kw_only=True)
+    _margin_left: int | float = field(default=0, repr=False, kw_only=True)
+    _margin_top: int | float = field(default=0, repr=False, kw_only=True)
+    _margin_right: int | float = field(default=0, repr=False, kw_only=True)
+    _margin_bottom: int | float = field(default=0, repr=False, kw_only=True)
     # padding
     _padding_left: int = field(default=0, repr=False, kw_only=True)
     _padding_top: int = field(default=0, repr=False, kw_only=True)
@@ -143,6 +143,20 @@ class LayoutItem(ABC):
         for item in self._items:
             item.apply(fn)
 
+    # interpret floats as share of space
+    def _outer_dims(self, left: int, top: int, width: int, height: int):
+        """Compute outer left, top, width and height."""
+        ml, mt, mr, mb = (
+            self._margin_left if isinstance(self._margin_left, int) else round(self._margin_left * width),
+            self._margin_top if isinstance(self._margin_top, int) else round(self._margin_top * height),
+            self._margin_right if isinstance(self._margin_right, int) else round(self._margin_right * width),
+            self._margin_bottom if isinstance(self._margin_bottom, int) else round(self._margin_bottom * height),
+        )
+        left, top, width, height = left + ml, top + mt, width - (ml + mr), height - (mt + mb)
+        if left > width or top > height:
+            raise errors.InsufficientSpaceError()
+        return left, top, width, height
+
 
 @dataclass(frozen=True, slots=True)
 class Column(LayoutItem):
@@ -154,10 +168,7 @@ class Column(LayoutItem):
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins
-        left += self._margin_left
-        top += self._margin_top
-        width -= self._margin_left + self._margin_right
-        height -= self._margin_top + self._margin_bottom
+        left, top, width, height = self._outer_dims(left, top, width, height)
 
         # track allocation of height
         top_ = top
@@ -244,10 +255,7 @@ class Row(LayoutItem):
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins
-        left += self._margin_left
-        top += self._margin_top
-        width -= self._margin_left + self._margin_right
-        height -= self._margin_top + self._margin_bottom
+        left, top, width, height = self._outer_dims(left, top, width, height)
 
         # track allocation of width
         left_ = left
