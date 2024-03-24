@@ -17,14 +17,16 @@ def align(strs: list[str], alignment: HorizontalAlignment):
     return _XALIGN[alignment](stripped_strs, width)
 
 
-def simple_wrap(strs: list[str], width: int) -> list[str]:
-    """Wrap list of strings into strings of length less than or equal to width."""
+def simple_wrap(strs: str | list[str], width: int) -> list[str]:
+    """Wrap (list of) strings into strings of length less than or equal to width."""
     # special case: just return every char from flattened list
     if width <= 1:
+        if isinstance(strs, str):
+            return [c for c in strs]
         return [c for str_ in strs for c in str_]
     # build up list by exhausting flattened string
     wrapped_strs = []
-    remaining_str = "\n".join(strs)
+    remaining_str = strs if isinstance(strs, str) else "\n".join(strs)
     while remaining_str:
         # ignore leading whitespace after the first line
         if wrapped_strs and (remaining_str[0] == "\n" or remaining_str[0] == " "):
