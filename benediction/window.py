@@ -302,7 +302,7 @@ class AbstractWindow(ABC):
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         ignore_overflow: bool = False,
         alignment: text.HorizontalAlignment | None = "left",
-        wrap: typing.Literal["simple", "textwrap", False] = "textwrap",
+        wrap: typing.Literal["simple", "textwrap", False] | None = None,
         wrap_width: int | None = None,
         textwrap_kwargs: TextWrapKwargs = {},
         attr: int | None = None,
@@ -323,62 +323,77 @@ class AbstractWindow(ABC):
         y_anchor = y_anchor if y_anchor is not None else _YDEFAULTANCHOR[y] if isinstance(y, str) else "top"
         x_anchor = x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
 
-        # wrap text
-        if isinstance(str_, str):
-            # skip wrapping
-            if wrap == False:
-                strs = [str_]
-            else:
+        # infer wrapping method from other parameters
+        wrap = (
+            wrap
+            if wrap is not None
+            else "textwrap"
+            if isinstance(str_, str)
+            else "simple"
+            if wrap_width is not None
+            else False
+        )
+
+        if wrap:
+            if wrap_width is None:
+                if not isinstance(str_, str):
+                    raise ValueError("Cannot cannot infer wrap width from list of strings.")
                 # infer wrap width s.t. lines wrap at point of horizontal overflow
-                if wrap_width is None:
-                    if x_anchor == "left":
-                        r = self.right_outer if x_anchor.endswith("outer") else self.right
-                        wrap_width = r - x_ + 1
-                    elif x_anchor == "right":
-                        l = self.left_outer if x_anchor.endswith("outer") else self.left
-                        wrap_width = x_ - l + 1
-                    else:
-                        # NOTE: this ties directly to the middle anchor "rounding down", which leads
-                        # to the string always growing to the right first (when the number of chars
-                        # is even) - so the width here corresponds to the minimum of where the
-                        # string would overflow on either side given this pattern, e.g.:
-                        #
-                        #  ... 2 3 4 5 6 7 8 ...
-                        # LEFT |   x       | RIGHT
-                        #      | _ _ _     |
-                        #      | _ _ _ _   |
-                        #      _ _ _ _ _   |
-                        #      _ _ _ _ _ _ |
-                        #    _ _ _ _ _ _ _ |
-                        #    _ _ _ _ _ _ _ _
-                        #
-                        # x  L   R   W
-                        # ------------
-                        # ...
-                        # 7  11  2   4
-                        # 6  9   4   6
-                        # 5  7   6   6
-                        # 4  5   8   5
-                        # 3  3   10  3
-                        # ...
-                        #
-                        # with x being the position, L/R the left/right char limit and W the width
-                        r = self.right_outer if x_anchor.endswith("outer") else self.right
-                        l = self.left_outer if x_anchor.endswith("outer") else self.left
-                        wrap_width = min(
-                            2 * (x_ - l) + 1,
-                            2 * (r - x_),
-                        )
-                wrap_width = max(wrap_width, 1)
-                if wrap == "textwrap":
-                    strs = textwrap.wrap(
-                        str_,
-                        wrap_width,
-                        **textwrap_kwargs,
+                elif x_anchor == "center":
+                    # NOTE: this ties directly to the middle anchor "rounding down", which leads
+                    # to the string always growing to the right first (when the number of chars
+                    # is even) - so the width here corresponds to the minimum of where the
+                    # string would overflow on either side given this pattern, e.g.:
+                    #
+                    #  ... 2 3 4 5 6 7 8 ...
+                    # LEFT |   x       | RIGHT
+                    #      | _ _ _     |
+                    #      | _ _ _ _   |
+                    #      _ _ _ _ _   |
+                    #      _ _ _ _ _ _ |
+                    #    _ _ _ _ _ _ _ |
+                    #    _ _ _ _ _ _ _ _
+                    #
+                    # x  L   R   W
+                    # ------------
+                    # ...
+                    # 7  11  2   4
+                    # 6  9   4   6
+                    # 5  7   6   6
+                    # 4  5   8   5
+                    # 3  3   10  3
+                    # ...
+                    #
+                    # with x being the position, L/R the left/right char limit and W the width
+                    r = self.right_outer if x_anchor.endswith("outer") else self.right
+                    l = self.left_outer if x_anchor.endswith("outer") else self.left
+                    wrap_width = min(
+                        2 * (x_ - l) + 1,
+                        2 * (r - x_),
                     )
+                elif x_anchor == "right":
+                    l = self.left_outer if x_anchor.endswith("outer") else self.left
+                    wrap_width = x_ - l + 1
                 else:
-                    strs = text.simple_wrap(str_, wrap_width)
+                    r = self.right_outer if x_anchor.endswith("outer") else self.right
+                    wrap_width = r - x_ + 1
+                wrap_width = max(wrap_width, 1)
+            # apply wrap to (list of) strings
+            if wrap == "textwrap":
+                if not isinstance(str_, str):
+                    raise ValueError("Cannot wrap list of strings with 'textwrap': use 'simple'.")
+                strs = textwrap.wrap(
+                    str_,
+                    wrap_width,
+                    **textwrap_kwargs,
+                )
+            else:
+                strs = text.simple_wrap(str_, wrap_width)
+        elif isinstance(str_, str):
+            # not wrapping string - so just contain in list
+            strs = [str_]
         else:
+            # proceed with list of strings provided as param
             strs = str_
 
         # align text
@@ -390,8 +405,7 @@ class AbstractWindow(ABC):
         x_ += _XANCHOR[x_anchor](strs)
 
         # handle y overflow
-        top_clip = 0
-        bottom_clip = None
+        top_clip, bottom_clip = 0, None
         if clip_overflow_y:
             top_clip = max((self.top if clip_overflow_y == "inner" else self.top_outer) - y_, 0)
             bottom_clip = max((self.bottom if clip_overflow_y == "inner" else self.bottom_outer) - y_ + 1, 0)
@@ -399,8 +413,7 @@ class AbstractWindow(ABC):
             raise errors.WindowOverflowError()
 
         # handle x overflow
-        left_clip = 0
-        right_clip = None
+        left_clip, right_clip = 0, None
         if clip_overflow_x:
             left_clip = max((self.left if clip_overflow_x == "inner" else self.left_outer) - x_, 0)
             right_clip = max((self.right if clip_overflow_x == "inner" else self.right_outer) - x_ + 1, 0)
