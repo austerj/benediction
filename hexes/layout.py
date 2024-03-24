@@ -377,7 +377,7 @@ class RowSubdivider(LayoutItemSubdivider):
     def subd(self):
         """Subdivide column into rows via chained methods."""
         if self._col is None:
-            raise RuntimeError("Cannot subdivide before adding a column.")
+            raise errors.LayoutError("Cannot subdivide before adding a column.")
         return ColumnSubdivider(self, self._col)
 
 
@@ -398,7 +398,7 @@ class ColumnSubdivider(LayoutItemSubdivider):
     def subd(self):
         """Subdivide row into columns via chained methods."""
         if self._row is None:
-            raise RuntimeError("Cannot subdivide before adding a row.")
+            raise errors.LayoutError("Cannot subdivide before adding a row.")
         return RowSubdivider(self, self._row)
 
 
