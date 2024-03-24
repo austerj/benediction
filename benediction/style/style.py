@@ -194,6 +194,9 @@ class Style:
 
     def derive(self, **kwargs: typing.Unpack[StyleKwargs]):
         """Create new Style derived from existing fields that are not replaced."""
+        if not kwargs:
+            # skip derivation if no fields are being overwritten
+            return self
         return replace(self, **_default_to_parent(self, **kwargs))
 
 

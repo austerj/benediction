@@ -430,7 +430,7 @@ class AbstractWindow(ABC):
             attr_ = attr
         else:
             # inherit from window style if any kwargs were provided
-            attr_ = (self.style.derive(**style_kwargs) if style_kwargs else self.style).attr
+            attr_ = self.style.derive(**style_kwargs).attr
 
         # add row by row from y_ and down
         for i, row in enumerate(strs[top_clip:bottom_clip]):
