@@ -1,6 +1,6 @@
 import typing
 
-COLOR = typing.Literal[
+Color = typing.Literal[
     "slate",
     "gray",
     "zinc",
@@ -245,7 +245,7 @@ COLOR = typing.Literal[
     "rose-900",
 ]
 
-colors: dict[COLOR, tuple[int, int, int]] = {
+COLORS: dict[Color, tuple[int, int, int]] = {
     # base name maps to shade 500
     "slate": (100, 116, 139),
     "gray": (107, 114, 128),
@@ -492,7 +492,7 @@ colors: dict[COLOR, tuple[int, int, int]] = {
     "rose-900": (136, 19, 55),
 }
 
-NAME = typing.Literal[
+Name = typing.Literal[
     "slate",
     "gray",
     "zinc",
@@ -517,4 +517,4 @@ NAME = typing.Literal[
     "rose",
 ]
 
-SHADE = typing.Literal[50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
+Shade = typing.Literal[50, 100, 200, 300, 400, 500, 600, 700, 800, 900]

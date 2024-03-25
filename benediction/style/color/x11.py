@@ -1,6 +1,6 @@
 import typing
 
-COLOR = typing.Literal[
+Color = typing.Literal[
     "snow",
     "ghost-white",
     "white-smoke",
@@ -569,7 +569,7 @@ COLOR = typing.Literal[
     "teal",
 ]
 
-colors: dict[COLOR, tuple[int, int, int]] = {
+COLORS: dict[Color, tuple[int, int, int]] = {
     "snow": (255, 250, 250),
     "ghost-white": (248, 248, 255),
     "white-smoke": (245, 245, 245),
@@ -1147,11 +1147,11 @@ if __name__ == "__main__":
     with urllib.request.urlopen("https://gitlab.freedesktop.org/xorg/app/rgb/raw/master/rgb.txt") as f:
         content = f.read().decode("utf-8")
         # remove tabs and split
-        colors = content.replace("\t", "").split("\n")
+        COLORS = content.replace("\t", "").split("\n")
         # all RGB triplets are in the first 11 chars (rrr ggg bbb|color name)
         unique_names = set()
         unique_colors = dict()
-        for color in colors:
+        for color in COLORS:
             rgb, name = color[:11], color[11:].strip()
             # skip if either is empty
             if not rgb or not name:
@@ -1175,12 +1175,12 @@ if __name__ == "__main__":
     with open("_x11.py", "w") as f:
         print("import typing\n", file=f)
         # create COLOR type
-        print("COLOR = typing.Literal[", file=f)
+        print("Color = typing.Literal[", file=f)
         for name in unique_colors.keys():
             print(f'\t"{name}",', file=f)
         print("]\n", file=f)
         # create color dict
-        print("colors: dict[COLOR, tuple[int, int, int]] = {", file=f)
+        print("COLORS: dict[COLOR, tuple[int, int, int]] = {", file=f)
         for name, rgb in unique_colors.items():
             print(f'\t"{name}": {rgb},', file=f)
         print("}", file=f)

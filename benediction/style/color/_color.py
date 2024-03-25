@@ -63,30 +63,30 @@ class Color_:
         return cls.__colors[rgb]
 
     @classmethod
-    def tw(cls, color: tailwind.COLOR) -> Color:
+    def tw(cls, color: tailwind.Color) -> Color:
         """Get named Tailwind color."""
         try:
-            rgb = tailwind.colors[color]
+            rgb = tailwind.COLORS[color]
         except KeyError:
-            raise errors.ColorError("Tailwind color not found.")
+            raise errors.ColorError(f"Tailwind color '{color}' not found.")
         return cls(*rgb)  # type: ignore
 
     @classmethod
     def tws(
         cls,
-        name: tailwind.NAME,
-        shades: typing.Sequence[tailwind.SHADE] = (50, 100, 200, 300, 400, 500, 600, 700, 800, 900),
+        name: tailwind.Name,
+        shades: typing.Sequence[tailwind.Shade] = (50, 100, 200, 300, 400, 500, 600, 700, 800, 900),
     ) -> tuple[Color, ...]:
         """Get shades of named Tailwind color."""
         return tuple(cls.tw(f"{name}-{shade}") for shade in shades)  # type: ignore
 
     @classmethod
-    def x11(cls, color: x11.COLOR) -> Color:
+    def x11(cls, color: x11.Color) -> Color:
         """Get named X11 color."""
         try:
-            rgb = x11.colors[color]
+            rgb = x11.COLORS[color]
         except KeyError:
-            raise errors.ColorError("X11 color not found.")
+            raise errors.ColorError(f"X11 color '{color}' not found.")
         return cls(*rgb)  # type: ignore
 
 

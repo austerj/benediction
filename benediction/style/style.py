@@ -4,7 +4,8 @@ import curses
 import typing
 from dataclasses import dataclass, field, replace
 
-from benediction.style.color._color import Color, ColorPair_
+from benediction.style.color import tailwind
+from benediction.style.color._color import Color, Color_, ColorPair_
 
 Attribute = typing.Literal[
     "alternate_character_set",
@@ -61,8 +62,8 @@ def _default_to_parent(parent: Style, **kwargs):
 
 class MainStyleKwargs(typing.TypedDict):
     # main style
-    fg: typing.NotRequired[Color | None]
-    bg: typing.NotRequired[Color | None]
+    fg: typing.NotRequired[tailwind.Color | Color | None]
+    bg: typing.NotRequired[tailwind.Color | Color | None]
     alternate_character_set: typing.NotRequired[bool | None]
     blink: typing.NotRequired[bool | None]
     bold: typing.NotRequired[bool | None]
@@ -84,10 +85,8 @@ class MainStyleKwargs(typing.TypedDict):
 
 class StyleKwargs(MainStyleKwargs, typing.TypedDict):
     # window style
-    win_fg: typing.NotRequired[Color | None]
-    win_bg: typing.NotRequired[Color | None]
-    win_fg: typing.NotRequired[Color | None]
-    win_bg: typing.NotRequired[Color | None]
+    win_fg: typing.NotRequired[tailwind.Color | Color | None]
+    win_bg: typing.NotRequired[tailwind.Color | Color | None]
     win_alternate_character_set: typing.NotRequired[bool | None]
     win_blink: typing.NotRequired[bool | None]
     win_bold: typing.NotRequired[bool | None]
@@ -197,6 +196,11 @@ class Style:
         if not kwargs:
             # skip derivation if no fields are being overwritten
             return self
+        else:
+            # replace strings with Tailwind colors
+            for key in ("fg", "bg", "win_fg", "win_bg"):
+                if isinstance(tw_color := kwargs.get(key), str):
+                    kwargs[key] = Color_.tw(tw_color)  # type: ignore
         return replace(self, **_default_to_parent(self, **kwargs))
 
 
