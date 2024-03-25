@@ -26,6 +26,7 @@ class Application(ABC):
     screen: Screen = field(default_factory=Screen, init=False, repr=False)
     running: bool | None = field(default=None, init=False)
     allow_rerun: typing.ClassVar[bool] = False
+    nodelay: typing.ClassVar[bool] = False
     # assign errors to be ignored during main loop
     suppress_errors: typing.ClassVar[
         typing.Sequence[typing.Type[Exception] | ErrorType] | typing.Type[Exception] | ErrorType | typing.Literal[False]
@@ -33,6 +34,9 @@ class Application(ABC):
     # internal error handling stuff
     __error_handler: typing.ClassVar[typing.Callable[..., _GeneratorContextManager[None]]]
     __debugging = False
+
+    def __post_init__(self):
+        self.screen = Screen(nodelay=self.nodelay)
 
     def __init_subclass__(cls) -> None:
         # infer errors to be suppressed from "public" class variable

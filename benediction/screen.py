@@ -10,7 +10,8 @@ from benediction.window import ScreenWindow
 @dataclass(slots=True)
 class Screen:
     _window: ScreenWindow | None = field(default=None, init=False)
-    layouts: list[Layout] = field(default_factory=list)
+    layouts: list[Layout] = field(default_factory=list, init=False)
+    nodelay: bool = False
 
     def __enter__(self):
         return self._setup()
@@ -63,6 +64,8 @@ class Screen:
             curses.start_color()
         except:
             pass
+        # nodelay mode
+        self.stdscr.nodelay(self.nodelay)
         # reset global color management state
         reset_colors()
         return self
@@ -73,6 +76,8 @@ class Screen:
         curses.echo()
         curses.nocbreak()
         curses.endwin()
+        # unset nodelay
+        self.stdscr.nodelay(False)
         # reset global color management state
         reset_colors()
 
