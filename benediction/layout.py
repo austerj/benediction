@@ -537,7 +537,7 @@ class Layout:
         self.kwargs = kwargs
 
     def __repr__(self):
-        return f"{self.__class__.__name__}([{self.__root or ''}])"
+        return f"{self.__class__.__name__}({self.root._items if self.__root else '[]'})"
 
     def row(
         self,
