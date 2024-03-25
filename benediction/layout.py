@@ -89,10 +89,18 @@ class LayoutItem(ABC):
     _padding_bottom: int | float = field(default=0, repr=False, kw_only=True)
     # style
     _style: Style = field(default=Style.default, repr=False, kw_only=True)
+    # name of space attribute
+    _space_name: typing.ClassVar[str]
 
     def __post_init__(self):
         if self._window is not None:
             self._window.set_style(self._style)
+        # validate bounds
+        if isinstance(self._space, int):
+            if not (self._space_min is None and self._space_max is None):
+                raise errors.LayoutError(f"Cannot use bounds with absolute (integer) {self._space_name}.")
+        elif self._space_min is not None and self._space_max is not None and self._space_min >= self._space_max:
+            raise errors.LayoutError(f"Lower bound must be strictly less than upper bound.")
 
     # properties for agnostic access
     @abstractproperty
@@ -268,6 +276,7 @@ class Column(LayoutItem):
     width: int | float | None  # None or float for dynamic allocation of available space
     width_min: int | None = None
     width_max: int | None = None
+    _space_name = "width"
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
@@ -344,6 +353,7 @@ class Row(LayoutItem):
     height: int | float | None  # None or float for dynamic allocation of available space
     height_min: int | None = field(default=None)
     height_max: int | None = field(default=None)
+    _space_name = "height"
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
