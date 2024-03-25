@@ -193,6 +193,11 @@ class Column(LayoutItem):
     min_width: int | float | None = None
     max_width: int | float | None = None
 
+    def __post_init__(self):
+        if isinstance(self.width, int) and not (self.min_width is None and self.max_width is None):
+            raise errors.LayoutError("Cannot use absolute (integer) width with bounds on width.")
+        return super().__post_init__()
+
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
         left, top, width, height = self._outer_dims(left, top, width, height)
@@ -284,6 +289,11 @@ class Row(LayoutItem):
     _cols: list[Column] = field(default_factory=list, init=False, repr=False)
     min_height: int | float | None = field(default=None)
     max_height: int | float | None = field(default=None)
+
+    def __post_init__(self):
+        if isinstance(self.height, int) and not (self.min_height is None and self.max_height is None):
+            raise errors.LayoutError("Cannot use absolute (integer) height with bounds on height.")
+        return super().__post_init__()
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
