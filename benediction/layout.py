@@ -8,6 +8,8 @@ from benediction import errors
 from benediction.style import Style, StyleKwargs
 from benediction.window import AbstractWindow, ScreenWindow
 
+T = typing.TypeVar("T")
+
 
 class LayoutKwargs(StyleKwargs):
     style: typing.NotRequired[Style]
@@ -64,6 +66,11 @@ def _map_kwargs(
         # style
         "_style": style.derive(**style_kwargs),
     }
+
+
+def _sort_with_indices(items: list[T], key: typing.Callable[[T], typing.Any]) -> tuple[tuple[int], tuple[T]]:
+    """Sort items and return tuple of original indices and sorted items."""
+    return tuple(zip(*sorted(enumerate(items), key=lambda x: key(x[1]))))
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,6 +205,9 @@ class Column(LayoutItem):
         left, top, width, height = self._outer_dims(left, top, width, height)
         self._set_dimensions(left, top, width, height)
 
+        if not self.rows:
+            return
+
         # track allocation of height
         top_ = top
 
@@ -218,8 +228,12 @@ class Column(LayoutItem):
         if dynamic_height < n_dynamic_rows:
             raise errors.InsufficientSpaceError()
 
-        # allocate height across rows with least-constrained dynamic row (=None) last for remainder
-        for row in sorted(self._rows, key=lambda row: (row.height is None, row.max_height is None)):
+        # compute height across rows with least-constrained dynamic row last for remainder
+        rows_idx, rows_sorted = _sort_with_indices(
+            self._rows, key=lambda row: (row.height is None, row.max_height is None, row.min_height is None)
+        )
+        row_heights: list[int] = []
+        for row in rows_sorted:
             if isinstance(row.height, int):
                 row_height = row.height
             else:
@@ -232,6 +246,11 @@ class Column(LayoutItem):
                     row_height = row.clip_height(round(dynamic_height * row_ratio))
                     remaining_dynamic_height -= row_height
                 dynamic_rows_allocated += 1
+            row_heights.append(row_height)
+
+        # apply updates in original layout order
+        for row, row_idx in zip(self._rows, rows_idx):
+            row_height = row_heights[row_idx]
             row.update(left, top_, width, row_height)
             top_ += row_height
 
@@ -299,6 +318,9 @@ class Row(LayoutItem):
         left, top, width, height = self._outer_dims(left, top, width, height)
         self._set_dimensions(left, top, width, height)
 
+        if not self.cols:
+            return
+
         # track allocation of width
         left_ = left
 
@@ -319,8 +341,12 @@ class Row(LayoutItem):
         if dynamic_width < n_dynamic_cols:
             raise errors.InsufficientSpaceError()
 
-        # allocate width across cols with least-constrained dynamic col (=None) last for remainder
-        for col in sorted(self._cols, key=lambda col: (col.width is None, col.max_width is None)):
+        # allocate width across cols with least-constrained dynamic col last for remainder
+        cols_idx, cols_sorted = _sort_with_indices(
+            self._cols, key=lambda col: (col.width is None, col.max_width is None, col.min_width is None)
+        )
+        col_widths: list[int] = []
+        for col in cols_sorted:
             if isinstance(col.width, int):
                 col_width = col.width
             else:
@@ -333,6 +359,11 @@ class Row(LayoutItem):
                     col_width = col.clip_width(round(dynamic_width * col_ratio))
                     remaining_dynamic_width -= col_width
                 dynamic_cols_allocated += 1
+            col_widths.append(col_width)
+
+        # apply updates in original layout order
+        for col, col_idx in zip(self._cols, cols_idx):
+            col_width = col_widths[col_idx]
             col.update(left_, top, col_width, height)
             left_ += col_width
 
