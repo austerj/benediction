@@ -121,6 +121,10 @@ class Application(ABC):
         """Return a new layout managed by the application screen."""
         return self.screen.new_layout(**kwargs)
 
+    def exit(self):
+        """Break out from main loop."""
+        self.running = False
+
     @abstractmethod
     def update(self):
         """Update virtual screen in main loop."""
