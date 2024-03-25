@@ -4,6 +4,7 @@ import curses
 import typing
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from contextlib import _GeneratorContextManager, contextmanager
 from dataclasses import dataclass, field
 
 from benediction import errors
@@ -28,21 +29,37 @@ class Application(ABC):
     # assign errors to be ignored during main loop
     suppress_errors: typing.ClassVar[
         typing.Sequence[typing.Type[Exception] | ErrorType] | typing.Type[Exception] | ErrorType | typing.Literal[False]
-    ] = False
-    __suppressed_errors: typing.ClassVar[tuple[typing.Type[Exception], ...]] = tuple()
+    ] = "benediction"
+    # internal error handling stuff
+    __error_handler: typing.ClassVar[typing.Callable[..., _GeneratorContextManager[None]]]
+    __debugging = False
 
     def __init_subclass__(cls) -> None:
         # infer errors to be suppressed from "public" class variable
         if cls.suppress_errors:
             if isinstance(cls.suppress_errors, str):
-                cls.__suppressed_errors = (_ERRORS[cls.suppress_errors],)
+                suppressed_errors = (_ERRORS[cls.suppress_errors],)
             elif isinstance(cls.suppress_errors, Sequence):
-                cls.__suppressed_errors = tuple(
+                suppressed_errors = tuple(
                     _ERRORS[error_type] if isinstance(error_type, str) else error_type
                     for error_type in cls.suppress_errors
                 )
             else:
-                cls.__suppressed_errors = (cls.suppress_errors,)
+                suppressed_errors = cls.suppress_errors
+        else:
+            suppressed_errors = tuple()
+
+        # suppress errors if not debugging
+        @contextmanager
+        def error_handler(self: Application):
+            try:
+                yield
+            except suppressed_errors as e:
+                if self.__debugging:
+                    raise e
+
+        cls.__error_handler = error_handler
+
         return super().__init_subclass__()
 
     def run(self):
@@ -57,16 +74,22 @@ class Application(ABC):
         finally:
             self.running = False
 
+    def debug(self):
+        """Debug application (ignoring suppression of errors)."""
+        try:
+            self.__debugging = True
+            self.run()
+        finally:
+            self.__debugging = False
+
     def main(self):
         """Main application refresh loop."""
         # initial screen and app refresh
-        try:
+        with self.__error_handler():
             self.screen.update()
             self.refresh()
-        except self.__suppressed_errors:
-            pass
         while self.running:
-            try:
+            with self.__error_handler():
                 if (ch := self.screen.getch()) == curses.KEY_RESIZE:
                     # handle resize
                     self.on_resize()
@@ -74,8 +97,6 @@ class Application(ABC):
                     self.on_ch(ch)
                 # main loop app refresh
                 self.refresh()
-            except self.__suppressed_errors:
-                pass
 
     def on_resize(self):
         """Respond to terminal resize event."""
