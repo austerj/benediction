@@ -324,13 +324,7 @@ class AbstractWindow(ABC):
         x_anchor = x_anchor if x_anchor is not None else _XDEFAULTANCHOR[x] if isinstance(x, str) else "left"
 
         # infer wrapping method from other parameters
-        wrap = (
-            wrap
-            if wrap is not None
-            else "simple"
-            if isinstance(str_, str) or wrap_width is not None
-            else False
-        )
+        wrap = wrap if wrap is not None else "simple" if isinstance(str_, str) or wrap_width is not None else False
 
         if wrap:
             if wrap_width is None:
@@ -446,12 +440,10 @@ class AbstractWindow(ABC):
         # drop None params
         xys_ = [xy for xy in xys if xy is not None]
         return (
-            # assume no boundary if all values are ints
-            False
+            # assume outer boundary if all values are ints or any explicit outer coordinate
+            "outer"
             if all(isinstance(xy, int) for xy in xys_)
-            # assume outer boundary if an explicit outer coordinate was given
-            else "outer"
-            if any(isinstance(xy, str) and xy.endswith("outer") for xy in xys_)
+            or any(isinstance(xy, str) and xy.endswith("outer") for xy in xys_)
             # else default to inner boundary
             else "inner"
         )
