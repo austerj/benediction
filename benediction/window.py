@@ -249,7 +249,7 @@ class AbstractWindow(ABC):
             raise errors.WindowNotInitializedError("Window must be initialized before being accessed.")
         return self._win
 
-    def chgat(
+    def format(
         self,
         from_y: int | VerticalPosition,
         from_x: int | HorizontalPosition,
@@ -263,7 +263,7 @@ class AbstractWindow(ABC):
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
-        """Set attributes in a region."""
+        """Change the formatting in a region of the window."""
         # infer overflow clipping
         clip_overflow_y = self._infer_overflow_boundary(from_y, to_y) if clip_overflow_y is None else clip_overflow_y
         clip_overflow_x = self._infer_overflow_boundary(from_x, to_x) if clip_overflow_x is None else clip_overflow_x
@@ -289,7 +289,7 @@ class AbstractWindow(ABC):
         for y in range(from_y_, to_y_ + 1):
             self.win.chgat(y, from_x_, num, self.style.derive(**style_kwargs).attr)
 
-    def addstr(
+    def print(
         self,
         str_: str | list[str],
         y: int | float | VerticalPosition = "top",
@@ -308,7 +308,7 @@ class AbstractWindow(ABC):
         attr: int | None = None,
         **style_kwargs: typing.Unpack[MainStyleKwargs],
     ):
-        """Add a (multi-line) string to the window."""
+        """Print a (multi-line) string to the window."""
         # infer overflow clipping
         clip_overflow_y = self._infer_overflow_boundary(y) if clip_overflow_y is None else clip_overflow_y
         clip_overflow_x = self._infer_overflow_boundary(x) if clip_overflow_x is None else clip_overflow_x

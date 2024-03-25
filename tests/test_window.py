@@ -17,16 +17,16 @@ def test_overflow():
 
     with pytest.raises(errors.WindowOverflowError):
         # set width explicitly to suppress auto wrap (horizontal overflow)
-        w.addstr("a" * (width + 1), wrap_width=(width + 1), clip_overflow_x=False)
+        w.print("a" * (width + 1), wrap_width=(width + 1), clip_overflow_x=False)
 
     with pytest.raises(errors.WindowOverflowError):
         # more chars than available on window (vertical overflow)
-        w.addstr("a" * (height * width + 1), clip_overflow_y=False)
+        w.print("a" * (height * width + 1), clip_overflow_y=False)
 
     with pytest.raises(errors.WindowNotInitializedError):
         # runtime error (due to missing initscr) - but no overflow
-        w.addstr("a" * width, wrap_width=width)
+        w.print("a" * width, wrap_width=width)
 
     with pytest.raises(errors.WindowNotInitializedError):
         # no overflow due to clipping
-        w.addstr("a" * (width + 1), wrap_width=(width + 1))
+        w.print("a" * (width + 1), wrap_width=(width + 1))
