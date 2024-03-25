@@ -19,7 +19,7 @@ class Color(int):
     blue: int
 
     def __new__(cls, number: int, *args, **kwargs):
-        return super().__new__(cls, number)
+        return super().__new__(cls, number % curses.COLORS)
 
     @property
     def fg(self) -> ColorPair:
@@ -39,27 +39,28 @@ class ColorPair(int):
     background: Color
 
     def __new__(cls, number: int, *args, **kwargs):
-        return super().__new__(cls, 0 if number <= 0 else curses.color_pair(number))
+        return super().__new__(cls, 0 if number <= 0 else curses.color_pair(number % curses.COLOR_PAIRS + 1))
 
 
 # exposed color classes that internally manages uniqueness
 class Color_:
-    __using_default_colors: bool = False
     __colors: dict[RGB, Color] = {}
-    default = Color(-1, None, None, None)  # type: ignore
+    default: Color
+    number = 0
 
     def __new__(cls, red: int = 0, green: int = 0, blue: int = 0):
         rgb = red, green, blue
-        # add new color or retrieve existing
-        if rgb not in cls.__colors:
-            # call use_default_colors if not done already
-            if not cls.__using_default_colors:
-                curses.use_default_colors()
-                cls.__using_default_colors = True
-            number = len(cls.__colors)
-            cls.__colors[rgb] = Color(number, *rgb)
+        # set default
+        if not hasattr(cls, "default"):
+            curses.use_default_colors()
+            cls.default = Color(-1, None, None, None)  # type: ignore
+        # add new color (or reinitialize it if color has been replaced)
+        if rgb not in cls.__colors or cls.number - cls.__colors[rgb].number > curses.COLORS:
+            cls.number += 1
+            color = Color(cls.number, *rgb)
+            cls.__colors[rgb] = color
             # init new color definition (mapping 0-255 to curses range 0-1000)
-            curses.init_color(number, *[(x * 1_000) // 255 for x in rgb])
+            curses.init_color(int(color), *[(x * 1_000) // 255 for x in rgb])
         return cls.__colors[rgb]
 
     @classmethod
@@ -93,6 +94,7 @@ class Color_:
 class ColorPair_:
     __pairs: dict[tuple[Color, Color], ColorPair] = {}
     default: ColorPair = ColorPair(0, None, None)  # type: ignore
+    number: int = 0
 
     def __new__(cls, foreground: Color | RGB, background: Color | RGB):
         # retrieve colors
@@ -100,13 +102,16 @@ class ColorPair_:
             foreground = Color_(*foreground)
         if isinstance(background, tuple):
             background = Color_(*background)
-        # add new pair or retrieve existing
+        # NOTE: need to start pair number from 1 due to 0 being reserved for white-on-black
         pair_key = (foreground, background)
-        if pair_key not in cls.__pairs:
-            # NOTE: need to start pair number from 1 due to 0 being reserved for white-on-black
-            number = len(cls.__pairs) + 1
-            cls.__pairs[pair_key] = ColorPair(number, foreground, background)
-            curses.init_pair(number, foreground, background)
+        # add new pair (or reinitialize it if pair has been replaced)
+        if pair_key not in cls.__pairs or cls.number - cls.__pairs[pair_key].number > curses.COLOR_PAIRS:
+            cls.number += 1
+            color_pair = ColorPair(cls.number, foreground, background)
+            cls.__pairs[pair_key] = color_pair
+            # NOTE: cannot use int(color_pair) - this gives the attr representation, NOT the pair number
+            pair_number = cls.number % curses.COLOR_PAIRS + 1
+            curses.init_pair(pair_number, foreground, background)
         return cls.__pairs[pair_key]
 
 
