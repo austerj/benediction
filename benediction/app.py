@@ -74,7 +74,7 @@ class Application(ABC):
             self.running = True
             with self.screen as _:
                 self.setup()
-                self.main()
+                self._main()
         finally:
             self.running = False
 
@@ -86,26 +86,35 @@ class Application(ABC):
         finally:
             self.__debugging = False
 
-    def main(self):
+    def _main(self):
         """Main application refresh loop."""
         # initial screen and app refresh
         with self.__error_handler():
-            self.screen.update()
-            self.refresh()
+            self._on_resize()
+            self._refresh()
         while self.running:
             with self.__error_handler():
                 if (ch := self.screen.getch()) == curses.KEY_RESIZE:
                     # handle resize
-                    self.on_resize()
+                    self._on_resize()
                 else:
                     self.on_ch(ch)
                 # main loop app refresh
-                self.refresh()
+                self._refresh()
 
-    def on_resize(self):
+    def _on_resize(self):
         """Respond to terminal resize event."""
         self.screen.clear()
         self.screen.update()
+
+    def _refresh(self):
+        """Refresh physical screen."""
+        self._noutrefresh()
+        curses.doupdate()
+
+    def _noutrefresh(self):
+        """Refresh virtual screen."""
+        self.update()
         self.screen.noutrefresh()
 
     def new_layout(self, **kwargs: typing.Unpack[LayoutKwargs]):
@@ -113,16 +122,16 @@ class Application(ABC):
         return self.screen.new_layout(**kwargs)
 
     @abstractmethod
-    def refresh(self):
-        """Refresh based on current application state."""
+    def update(self):
+        """Update virtual screen in main loop."""
         raise NotImplementedError
 
     @abstractmethod
     def setup(self):
-        """Application state setup prior to main refresh loop."""
+        """Application state setup prior to main loop."""
         raise NotImplementedError
 
     @abstractmethod
     def on_ch(self, ch: int | None):
-        """Respond to character press (e.g. update internal state of application.)"""
+        """Respond to character press (e.g. update application state)"""
         raise NotImplementedError
