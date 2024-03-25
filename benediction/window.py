@@ -301,7 +301,7 @@ class AbstractWindow(ABC):
         clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
         ignore_overflow: bool = False,
-        alignment: text.HorizontalAlignment | typing.Literal[False] | None = None,
+        alignment: text.HorizontalAlignment | typing.Literal[False] = False,
         wrap: typing.Literal["simple", "textwrap", False] | None = None,
         wrap_width: int | None = None,
         textwrap_kwargs: TextWrapKwargs = {},
@@ -399,7 +399,6 @@ class AbstractWindow(ABC):
             strs = str_
 
         # align text
-        alignment = alignment if alignment is not None else "left" if wrap else False
         if alignment:
             strs = text.align(strs, alignment)
 
