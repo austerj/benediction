@@ -218,13 +218,13 @@ class Column(LayoutItem):
         if dynamic_height < n_dynamic_rows:
             raise errors.InsufficientSpaceError()
 
-        # allocate height across rows
-        for row in self._rows:
+        # allocate height across rows leaving implicit dynamic height (=None) last
+        for row in sorted(self._rows, key=lambda row: row.height is None):
             if isinstance(row.height, int):
                 row_height = row.height
             else:
-                # assign all remaining height if last dynamic row
-                if dynamic_rows_allocated == n_dynamic_rows - 1:
+                # assign all remaining height if last dynamic row and not relative
+                if dynamic_rows_allocated == n_dynamic_rows - 1 and row.height is None:
                     row_height = remaining_dynamic_height
                 else:
                     # else assign ratio of dynamic height
@@ -311,12 +311,12 @@ class Row(LayoutItem):
             raise errors.InsufficientSpaceError()
 
         # allocate width across cols
-        for col in self._cols:
+        for col in sorted(self._cols, key=lambda col: col.width is None):
             if isinstance(col.width, int):
                 col_width = col.width
             else:
                 # assign all remaining width if last dynamic col
-                if dynamic_cols_allocated == n_dynamic_cols - 1:
+                if dynamic_cols_allocated == n_dynamic_cols - 1 and col.width is None:
                     col_width = remaining_dynamic_width
                 else:
                     # else assign ratio of dynamic width
