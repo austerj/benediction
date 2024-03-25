@@ -351,6 +351,18 @@ class Column(LayoutItem["Row"]):
     @property
     def _space_max(self):
         return self.width_max
+    
+    @property
+    def height(self):
+        return self._parent.height
+    
+    @property
+    def height_min(self):
+        return self._parent.height_min
+    
+    @property
+    def height_max(self):
+        return self._parent.height_max
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -421,6 +433,18 @@ class Row(LayoutItem["Column"]):
     @property
     def _space_max(self):
         return self.height_max
+    
+    @property
+    def width(self):
+        return self._parent.width
+    
+    @property
+    def width_min(self):
+        return self._parent.width_min
+    
+    @property
+    def width_max(self):
+        return self._parent.width_max
 
 
 @dataclass(slots=True)
@@ -535,6 +559,9 @@ class Layout:
         self.__root = None
         self.__root_window = __root_window
         self.kwargs = kwargs
+        # dimensions
+        self.__height = None
+        self.__width = None
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.root._items if self.__root else '[]'})"
@@ -641,3 +668,31 @@ class Layout:
 
     def __getitem__(self, i):
         return self.root.__getitem__(i)
+    
+    @property
+    def height(self):
+        if self.__width is None:
+            raise errors.LayoutError("Cannot access height before layout has been updated.")
+        return self.__height
+    
+    @property
+    def height_min(self):
+        return None
+    
+    @property
+    def height_max(self):
+        return None
+    
+    @property
+    def width(self):
+        if self.__width is None:
+            raise errors.LayoutError("Cannot access width before layout has been updated.")
+        return self.__width
+    
+    @property
+    def width_min(self):
+        return None
+    
+    @property
+    def width_max(self):
+        return None
