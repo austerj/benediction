@@ -94,6 +94,27 @@ class LayoutItem(ABC):
         if self._window is not None:
             self._window.set_style(self._style)
 
+    # properties for agnostic access
+    @abstractproperty
+    def _items(self) -> list[LayoutItem]:
+        """Nested layout items."""
+        raise NotImplementedError
+
+    @abstractproperty
+    def _space(self) -> int | float | None:
+        """Space of item."""
+        raise NotImplementedError
+
+    @abstractproperty
+    def _space_min(self) -> int | None:
+        """Minimum space of item."""
+        raise NotImplementedError
+
+    @abstractproperty
+    def _space_max(self) -> int | None:
+        """Maximum space of item."""
+        raise NotImplementedError
+
     @property
     def window(self):
         if self._window is None:
@@ -107,11 +128,6 @@ class LayoutItem(ABC):
     def clear(self):
         """Clear window and all nested layout items."""
         self.apply(lambda w: w.clear())
-
-    @abstractproperty
-    def _items(self) -> list[LayoutItem]:
-        """Nested layout items."""
-        raise NotImplementedError
 
     @abstractmethod
     def update(self, left: int, top: int, width: int, height: int):
@@ -141,6 +157,15 @@ class LayoutItem(ABC):
     ):
         """Add new row with fixed or dynamic height."""
         raise NotImplementedError
+
+    def _clip(self, space: int) -> int:
+        """Clip to item boundaries."""
+        space_ = space
+        if self._space_min is not None:
+            space_ = max(space_, self._space_min)
+        if self._space_max is not None:
+            space_ = min(space_, self._space_max)
+        return space_
 
     @abstractmethod
     def subd(self):
@@ -189,6 +214,50 @@ class LayoutItem(ABC):
                 raise errors.InsufficientSpaceError("Padding cannot exceed window height.")
             self._window.set_dimensions(left, top, width, height, pl, pt, pr, pb)
 
+    def _allocate_space(self, space: int):
+        """Compute allocated space for each item and return iterator of item-space pairs."""
+        items = self._items
+
+        # initialize dynamic space allocation
+        dynamic_space = space - sum(item._space if isinstance(item._space, int) else 0 for item in items)
+        remaining_dynamic_space = dynamic_space
+        n_implicit_items = sum(item._space is None for item in items)
+        n_dynamic_items = sum(not isinstance(item._space, int) for item in items)
+        dynamic_items_allocated = 0
+
+        # explicit and implicit ratios
+        explicit_ratio = sum(item._space if isinstance(item._space, float) else 0.0 for item in items)
+        if not (0.0 <= explicit_ratio <= 1.0):
+            raise errors.InsufficientSpaceError(f"Cannot dynamically allocate more space than available.")
+        implicit_ratio = (1.0 - explicit_ratio) / n_implicit_items if n_implicit_items > 0 else 0.0
+
+        # raise if unable to allocate at least 1 space unit per item
+        if dynamic_space < n_dynamic_items:
+            raise errors.InsufficientSpaceError()
+
+        # compute space across items with least-constrained dynamic item last for remainder
+        items_idx, items_sorted = _sort_with_indices(
+            items, key=lambda item: (item._space is None, item._space_max is None, item._space_min is None)
+        )
+        items_space: list[int] = []
+        for item in items_sorted:
+            if isinstance(item_space := item._space, int):
+                item_space = item_space
+            else:
+                # assign all remaining space if last dynamic item and not relative
+                if dynamic_items_allocated == n_dynamic_items - 1 and item_space is None:
+                    item_space = item._clip(remaining_dynamic_space)
+                else:
+                    # else assign ratio of dynamic space
+                    item_ratio = implicit_ratio if item_space is None else item_space
+                    item_space = item._clip(round(dynamic_space * item_ratio))
+                    remaining_dynamic_space -= item_space
+                dynamic_items_allocated += 1
+            items_space.append(item_space)
+
+        # return items and their allocated space for iteration
+        return zip(self._items, (items_space[item_idx] for item_idx in items_idx))
+
 
 @dataclass(frozen=True, slots=True)
 class Column(LayoutItem):
@@ -208,60 +277,11 @@ class Column(LayoutItem):
         if not self.rows:
             return
 
-        # track allocation of height
+        # allocate height from top to bottom
         top_ = top
-
-        # initialize dynamic height allocation
-        dynamic_height = height - sum(row.height if isinstance(row.height, int) else 0 for row in self._rows)
-        remaining_dynamic_height = dynamic_height
-        n_implicit_rows = sum(row.height is None for row in self._rows)
-        n_dynamic_rows = sum(not isinstance(row.height, int) for row in self._rows)
-        dynamic_rows_allocated = 0
-
-        # explicit and implicit ratios
-        explicit_ratio = sum(row.height if isinstance(row.height, float) else 0.0 for row in self._rows)
-        if not (0.0 <= explicit_ratio <= 1.0):
-            raise errors.InsufficientSpaceError("Cannot dynamically allocate more height than available.")
-        implicit_ratio = (1.0 - explicit_ratio) / n_implicit_rows if n_implicit_rows > 0 else 0.0
-
-        # raise if unable to allocate at least 1 height unit per row
-        if dynamic_height < n_dynamic_rows:
-            raise errors.InsufficientSpaceError()
-
-        # compute height across rows with least-constrained dynamic row last for remainder
-        rows_idx, rows_sorted = _sort_with_indices(
-            self._rows, key=lambda row: (row.height is None, row.max_height is None, row.min_height is None)
-        )
-        row_heights: list[int] = []
-        for row in rows_sorted:
-            if isinstance(row.height, int):
-                row_height = row.height
-            else:
-                # assign all remaining height if last dynamic row and not relative
-                if dynamic_rows_allocated == n_dynamic_rows - 1 and row.height is None:
-                    row_height = row.clip_height(remaining_dynamic_height)
-                else:
-                    # else assign ratio of dynamic height
-                    row_ratio = implicit_ratio if row.height is None else row.height
-                    row_height = row.clip_height(round(dynamic_height * row_ratio))
-                    remaining_dynamic_height -= row_height
-                dynamic_rows_allocated += 1
-            row_heights.append(row_height)
-
-        # apply updates in original layout order
-        for row, row_idx in zip(self._rows, rows_idx):
-            row_height = row_heights[row_idx]
+        for row, row_height in self._allocate_space(height):
             row.update(left, top_, width, row_height)
             top_ += row_height
-
-    def clip_width(self, width: int):
-        """Align available width with min / max if assigned."""
-        width_ = width
-        if self.min_width is not None:
-            width_ = max(width_, self.min_width)
-        if self.max_width is not None:
-            width_ = min(width_, self.max_width)
-        return width_
 
     def col(
         self,
@@ -302,6 +322,18 @@ class Column(LayoutItem):
     def _items(self):
         return self._rows
 
+    @property
+    def _space(self):
+        return self.width
+
+    @property
+    def _space_min(self):
+        return self.min_width
+
+    @property
+    def _space_max(self):
+        return self.max_width
+
 
 @dataclass(frozen=True, slots=True)
 class Row(LayoutItem):
@@ -321,60 +353,11 @@ class Row(LayoutItem):
         if not self.cols:
             return
 
-        # track allocation of width
+        # allocate width from left to right
         left_ = left
-
-        # initialize dynamic width allocation
-        dynamic_width = width - sum(col.width if isinstance(col.width, int) else 0 for col in self._cols)
-        remaining_dynamic_width = dynamic_width
-        n_implicit_cols = sum(col.width is None for col in self._cols)
-        n_dynamic_cols = sum(not isinstance(col.width, int) for col in self._cols)
-        dynamic_cols_allocated = 0
-
-        # explicit and implicit ratios
-        explicit_ratio = sum(col.width if isinstance(col.width, float) else 0.0 for col in self._cols)
-        if not (0.0 <= explicit_ratio <= 1.0):
-            raise errors.InsufficientSpaceError("Cannot dynamically allocate more width than available.")
-        implicit_ratio = (1.0 - explicit_ratio) / n_implicit_cols if n_implicit_cols > 0 else 0.0
-
-        # raise if unable to allocate at least 1 width unit per row
-        if dynamic_width < n_dynamic_cols:
-            raise errors.InsufficientSpaceError()
-
-        # allocate width across cols with least-constrained dynamic col last for remainder
-        cols_idx, cols_sorted = _sort_with_indices(
-            self._cols, key=lambda col: (col.width is None, col.max_width is None, col.min_width is None)
-        )
-        col_widths: list[int] = []
-        for col in cols_sorted:
-            if isinstance(col.width, int):
-                col_width = col.width
-            else:
-                # assign all remaining width if last dynamic col and not relative
-                if dynamic_cols_allocated == n_dynamic_cols - 1 and col.width is None:
-                    col_width = col.clip_width(remaining_dynamic_width)
-                else:
-                    # else assign ratio of dynamic width
-                    col_ratio = implicit_ratio if col.width is None else col.width
-                    col_width = col.clip_width(round(dynamic_width * col_ratio))
-                    remaining_dynamic_width -= col_width
-                dynamic_cols_allocated += 1
-            col_widths.append(col_width)
-
-        # apply updates in original layout order
-        for col, col_idx in zip(self._cols, cols_idx):
-            col_width = col_widths[col_idx]
+        for col, col_width in self._allocate_space(width):
             col.update(left_, top, col_width, height)
             left_ += col_width
-
-    def clip_height(self, height: int):
-        """Align available width with min / max if assigned."""
-        height_ = height
-        if self.min_height is not None:
-            height_ = max(height_, self.min_height)
-        if self.max_height is not None:
-            height_ = min(height_, self.max_height)
-        return height_
 
     def row(
         self,
@@ -412,6 +395,18 @@ class Row(LayoutItem):
     @property
     def _items(self):
         return self._cols
+
+    @property
+    def _space(self):
+        return self.height
+
+    @property
+    def _space_min(self):
+        return self.min_height
+
+    @property
+    def _space_max(self):
+        return self.max_height
 
 
 @dataclass(slots=True)
