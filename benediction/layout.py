@@ -185,7 +185,7 @@ class Column(LayoutItem):
 
     _parent: Row | Layout = field(repr=False)
     width: int | float | None  # None or float for dynamic allocation of available space
-    _rows: list[Row] = field(default_factory=list, init=False)
+    _rows: list[Row] = field(default_factory=list, init=False, repr=False)
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
@@ -261,7 +261,7 @@ class Row(LayoutItem):
 
     _parent: Column | Layout
     height: int | float | None  # None or float for dynamic allocation of available space
-    _cols: list[Column] = field(default_factory=list, init=False)
+    _cols: list[Column] = field(default_factory=list, init=False, repr=False)
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
@@ -408,7 +408,7 @@ class Layout:
 
     # root layout node
     __root: Column | Row | None = field(default=None, init=False)
-    __root_window: AbstractWindow | None = field(default=None)
+    __root_window: AbstractWindow | None = field(default=None, repr=False)
 
     def __init__(self, __root_window: AbstractWindow | None = None, **kwargs: typing.Unpack[LayoutKwargs]):
         self.__root_window = __root_window
