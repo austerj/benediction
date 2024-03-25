@@ -169,11 +169,11 @@ def test_dynamic_floats():
     layout.row(w(), height=0.5).row(w(), height=0.2).row().subd().col(w(), width=0.4).col(w()).col(w())
 
     layout.update(0, 0, 100, 100)
-    assert check_dimensions(layout.rows[0], 100, 50)
-    assert check_dimensions(layout.rows[1], 100, 20)
-    assert check_dimensions(layout.rows[2].cols[0], 40, 30)
-    assert check_dimensions(layout.rows[2].cols[1], 30, 30)
-    assert check_dimensions(layout.rows[2].cols[2], 30, 30)
+    assert check_dimensions(layout[0], 100, 50)
+    assert check_dimensions(layout[1], 100, 20)
+    assert check_dimensions(layout[2][0], 40, 30)
+    assert check_dimensions(layout[2][1], 30, 30)
+    assert check_dimensions(layout[2][2], 30, 30)
 
 
 def test_padding():
@@ -257,7 +257,7 @@ def test_layout_items():
     # fmt: on
 
 
-def test_relative_dimensions():
+def test_relative_layout():
     layout = Layout()
 
     r0_h, r0_c0_w, r0_c1_mb, r1_h, r1_mr = 0.4, 0.25, 0.15, 0.2, 0.1
@@ -266,24 +266,22 @@ def test_relative_dimensions():
     (layout
         .row(w(), height=r0_h).subd()
             .col(w(), width=r0_c0_w).col(w(), mb=r0_c1_mb)
-        .row(w(), height=r1_h, mr=r1_mr).col()
+        .row(w(), height=r1_h, mr=r1_mr)
         .row(w())
     )
     # fmt: on
-
-    print(layout.rows[0]._style)
 
     for height in [30, 50, 60]:
         for width in [30, 60, 90]:
             layout.update(0, 0, width, height)
             # row 0
-            assert check_dimensions(layout.rows[0], width, r0_h * height)
-            assert check_dimensions(layout.rows[0].cols[0], r0_c0_w * width, r0_h * height)
-            assert check_dimensions(layout.rows[0].cols[1], (1 - r0_c0_w) * width, (1 - r0_c1_mb) * (r0_h * height))
+            assert check_dimensions(layout[0], width, r0_h * height)
+            assert check_dimensions(layout[0][0], r0_c0_w * width, r0_h * height)
+            assert check_dimensions(layout[0][1], (1 - r0_c0_w) * width, (1 - r0_c1_mb) * (r0_h * height))
             # row 1
-            assert check_dimensions(layout.rows[1], (1 - r1_mr) * width, r1_h * height)
+            assert check_dimensions(layout[1], (1 - r1_mr) * width, r1_h * height)
             # row 2
-            assert check_dimensions(layout.rows[2], width, (1 - r0_h - r1_h) * height)
+            assert check_dimensions(layout[2], width, (1 - r0_h - r1_h) * height)
 
 
 def test_bounds():
