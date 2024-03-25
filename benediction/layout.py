@@ -9,7 +9,7 @@ from benediction.style import Style, StyleKwargs
 from benediction.window import AbstractWindow, ScreenWindow
 
 
-class LayoutKwargs(StyleKwargs, typing.TypedDict):
+class LayoutKwargs(StyleKwargs):
     style: typing.NotRequired[Style]
     # margins
     m: typing.NotRequired[int | float | None]
@@ -50,20 +50,20 @@ def _map_kwargs(
     style: Style = Style.default,
     **style_kwargs: typing.Unpack[StyleKwargs],
 ) -> dict[str, typing.Any]:
-    return dict(
+    return {
         # margins with priority given to most specific keyword
-        _margin_top=mt if mt is not None else my if my is not None else m if m is not None else 0,
-        _margin_bottom=mb if mb is not None else my if my is not None else m if m is not None else 0,
-        _margin_left=ml if ml is not None else mx if mx is not None else m if m is not None else 0,
-        _margin_right=mr if mr is not None else mx if mx is not None else m if m is not None else 0,
+        "_margin_top": mt if mt is not None else my if my is not None else m if m is not None else 0,
+        "_margin_bottom": mb if mb is not None else my if my is not None else m if m is not None else 0,
+        "_margin_left": ml if ml is not None else mx if mx is not None else m if m is not None else 0,
+        "_margin_right": mr if mr is not None else mx if mx is not None else m if m is not None else 0,
         # padding with priority given to most specific keyword
-        _padding_top=pt if pt is not None else py if py is not None else p if p is not None else 0,
-        _padding_bottom=pb if pb is not None else py if py is not None else p if p is not None else 0,
-        _padding_left=pl if pl is not None else px if px is not None else p if p is not None else 0,
-        _padding_right=pr if pr is not None else px if px is not None else p if p is not None else 0,
+        "_padding_top": pt if pt is not None else py if py is not None else p if p is not None else 0,
+        "_padding_bottom": pb if pb is not None else py if py is not None else p if p is not None else 0,
+        "_padding_left": pl if pl is not None else px if px is not None else p if p is not None else 0,
+        "_padding_right": pr if pr is not None else px if px is not None else p if p is not None else 0,
         # style
-        _style=style.derive(**style_kwargs),
-    )
+        "_style": style.derive(**style_kwargs),
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,6 +116,8 @@ class LayoutItem(ABC):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
+        min_width: int | float | None = None,
+        max_width: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new column with fixed or dynamic height."""
@@ -126,6 +128,8 @@ class LayoutItem(ABC):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
+        min_height: int | float | None = None,
+        max_height: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new row with fixed or dynamic height."""
@@ -186,6 +190,8 @@ class Column(LayoutItem):
     _parent: Row | Layout = field(repr=False)
     width: int | float | None  # None or float for dynamic allocation of available space
     _rows: list[Row] = field(default_factory=list, init=False, repr=False)
+    min_width: int | float | None = None
+    max_width: int | float | None = None
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
@@ -229,13 +235,27 @@ class Column(LayoutItem):
             row.update(left, top_, width, row_height)
             top_ += row_height
 
-    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
+    def col(
+        self,
+        window: AbstractWindow | None = None,
+        width: int | float | None = None,
+        min_width: int | float | None = None,
+        max_width: int | float | None = None,
+        **kwargs,
+    ):
         if isinstance(self._parent, Layout):
             raise TypeError("Cannot add columns to root layout.")
-        return self._parent.col(window, width, **kwargs)
+        return self._parent.col(window, width, min_width, max_width, **kwargs)
 
-    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
-        new_row = Row(self, window, height, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
+    def row(
+        self,
+        window: AbstractWindow | None = None,
+        height: int | float | None = None,
+        min_height: int | float | None = None,
+        max_height: int | float | None = None,
+        **kwargs,
+    ):
+        new_row = Row(self, window, height, min_height, max_height, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
         self._rows.append(new_row)
         return new_row
 
@@ -262,6 +282,8 @@ class Row(LayoutItem):
     _parent: Column | Layout
     height: int | float | None  # None or float for dynamic allocation of available space
     _cols: list[Column] = field(default_factory=list, init=False, repr=False)
+    min_height: int | float | None = field(default=None)
+    max_height: int | float | None = field(default=None)
 
     def update(self, left: int, top: int, width: int, height: int):
         # incorporate margins and set window dimensions
@@ -305,11 +327,25 @@ class Row(LayoutItem):
             col.update(left_, top, col_width, height)
             left_ += col_width
 
-    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
-        return self._parent.row(window, height, **kwargs)
+    def row(
+        self,
+        window: AbstractWindow | None = None,
+        height: int | float | None = None,
+        min_height: int | float | None = None,
+        max_height: int | float | None = None,
+        **kwargs,
+    ):
+        return self._parent.row(window, height, min_height, max_height, **kwargs)
 
-    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
-        new_col = Column(self, window, width, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
+    def col(
+        self,
+        window: AbstractWindow | None = None,
+        width: int | float | None = None,
+        min_width: int | float | None = None,
+        max_width: int | float | None = None,
+        **kwargs,
+    ):
+        new_col = Column(self, window, width, min_width, max_width, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
         self._cols.append(new_col)
         return new_col
 
@@ -340,6 +376,8 @@ class LayoutItemSubdivider(ABC):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
+        min_width: int | float | None = None,
+        max_width: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new column with fixed or dynamic width."""
@@ -350,6 +388,8 @@ class LayoutItemSubdivider(ABC):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
+        min_height: int | float | None = None,
+        max_height: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new row with fixed or dynamic height."""
@@ -366,13 +406,27 @@ class RowSubdivider(LayoutItemSubdivider):
     _row: Row
     _col: Column | None = field(default=None, init=False)
 
-    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
-        new_col = self._row.col(window, width, **kwargs)
+    def col(
+        self,
+        window: AbstractWindow | None = None,
+        width: int | float | None = None,
+        min_width: int | float | None = None,
+        max_width: int | float | None = None,
+        **kwargs,
+    ):
+        new_col = self._row.col(window, width, min_width, max_width, **kwargs)
         self._col = new_col
         return self
 
-    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
-        return self.parent.row(window, height, **kwargs)
+    def row(
+        self,
+        window: AbstractWindow | None = None,
+        height: int | float | None = None,
+        min_height: int | float | None = None,
+        max_height: int | float | None = None,
+        **kwargs,
+    ):
+        return self.parent.row(window, height, min_height, max_height, **kwargs)
 
     def subd(self):
         """Subdivide column into rows via chained methods."""
@@ -387,11 +441,25 @@ class ColumnSubdivider(LayoutItemSubdivider):
     _col: Column
     _row: Row | None = field(default=None, init=False)
 
-    def col(self, window: AbstractWindow | None = None, width: int | float | None = None, **kwargs):
-        return self.parent.col(window, width, **kwargs)
+    def col(
+        self,
+        window: AbstractWindow | None = None,
+        width: int | float | None = None,
+        min_width: int | float | None = None,
+        max_width: int | float | None = None,
+        **kwargs,
+    ):
+        return self.parent.col(window, width, min_width, max_width, **kwargs)
 
-    def row(self, window: AbstractWindow | None = None, height: int | float | None = None, **kwargs):
-        new_row = self._col.row(window, height, **kwargs)
+    def row(
+        self,
+        window: AbstractWindow | None = None,
+        height: int | float | None = None,
+        min_height: int | float | None = None,
+        max_height: int | float | None = None,
+        **kwargs,
+    ):
+        new_row = self._col.row(window, height, min_height, max_height, **kwargs)
         self._row = new_row
         return self
 
@@ -418,6 +486,8 @@ class Layout:
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
+        min_height: int | float | None = None,
+        max_height: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Subdivide layout into rows via chained methods."""
@@ -425,12 +495,14 @@ class Layout:
             self.__root = Column(self, self.__root_window, None, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Row):
             raise errors.LayoutError("Cannot add row to row-major layout.")
-        return self.root.row(window, height, **kwargs)
+        return self.root.row(window, height, min_height, max_height, **kwargs)
 
     def col(
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
+        min_width: int | float | None = None,
+        max_width: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Subdivide layout into columns via chained methods."""
@@ -438,7 +510,7 @@ class Layout:
             self.__root = Row(self, self.__root_window, None, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Column):
             raise errors.LayoutError("Cannot add column to column-major layout.")
-        return self.__root.col(window, width, **kwargs)
+        return self.__root.col(window, width, min_width, max_width, **kwargs)
 
     def update(self, left: int, top: int, width: int, height: int):
         """Update rows and columns of layout."""
