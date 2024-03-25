@@ -73,22 +73,22 @@ def _sort_with_indices(items: list[T], key: typing.Callable[[T], typing.Any]) ->
     return tuple(zip(*sorted(enumerate(items), key=lambda x: key(x[1]))))
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, repr=False)
 class LayoutItem(ABC):
     _parent: LayoutItem | Layout
     _window: AbstractWindow | None
     # margins
-    _margin_left: int | float = field(default=0, repr=False, kw_only=True)
-    _margin_top: int | float = field(default=0, repr=False, kw_only=True)
-    _margin_right: int | float = field(default=0, repr=False, kw_only=True)
-    _margin_bottom: int | float = field(default=0, repr=False, kw_only=True)
+    _margin_left: int | float = field(default=0, kw_only=True)
+    _margin_top: int | float = field(default=0, kw_only=True)
+    _margin_right: int | float = field(default=0, kw_only=True)
+    _margin_bottom: int | float = field(default=0, kw_only=True)
     # padding
-    _padding_left: int | float = field(default=0, repr=False, kw_only=True)
-    _padding_top: int | float = field(default=0, repr=False, kw_only=True)
-    _padding_right: int | float = field(default=0, repr=False, kw_only=True)
-    _padding_bottom: int | float = field(default=0, repr=False, kw_only=True)
+    _padding_left: int | float = field(default=0, kw_only=True)
+    _padding_top: int | float = field(default=0, kw_only=True)
+    _padding_right: int | float = field(default=0, kw_only=True)
+    _padding_bottom: int | float = field(default=0, kw_only=True)
     # style
-    _style: Style = field(default=Style.default, repr=False, kw_only=True)
+    _style: Style = field(default=Style.default, kw_only=True)
     # name of space attribute
     _space_name: typing.ClassVar[str]
 
@@ -101,6 +101,9 @@ class LayoutItem(ABC):
                 raise errors.LayoutError(f"Cannot use bounds with absolute (integer) {self._space_name}.")
         elif self._space_min is not None and self._space_max is not None and self._space_min >= self._space_max:
             raise errors.LayoutError(f"Lower bound must be strictly less than upper bound.")
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._items})"
 
     # properties for agnostic access
     @abstractproperty
@@ -267,12 +270,12 @@ class LayoutItem(ABC):
         return zip(self._items, (items_space[item_idx] for item_idx in items_idx))
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, repr=False)
 class Column(LayoutItem):
     """Layout column."""
 
-    _parent: Row | Layout = field(repr=False)
-    _rows: list[Row] = field(default_factory=list, init=False, repr=False)
+    _parent: Row | Layout
+    rows: list[Row] = field(default_factory=list, init=False)
     width: int | float | None  # None or float for dynamic allocation of available space
     width_min: int | None = None
     width_max: int | None = None
@@ -313,7 +316,7 @@ class Column(LayoutItem):
         **kwargs,
     ):
         new_row = Row(self, window, height, height_min, height_max, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
-        self._rows.append(new_row)
+        self.rows.append(new_row)
         return new_row
 
     def subd(self):
@@ -323,13 +326,8 @@ class Column(LayoutItem):
         return ColumnSubdivider(self._parent, self)
 
     @property
-    def rows(self):
-        """Rows nested in column."""
-        return self._rows
-
-    @property
     def _items(self):
-        return self._rows
+        return self.rows
 
     @property
     def _space(self):
@@ -344,12 +342,12 @@ class Column(LayoutItem):
         return self.width_max
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, repr=False)
 class Row(LayoutItem):
     """Layout row."""
 
     _parent: Column | Layout
-    _cols: list[Column] = field(default_factory=list, init=False, repr=False)
+    cols: list[Column] = field(default_factory=list, init=False)
     height: int | float | None  # None or float for dynamic allocation of available space
     height_min: int | None = field(default=None)
     height_max: int | None = field(default=None)
@@ -388,7 +386,7 @@ class Row(LayoutItem):
         **kwargs,
     ):
         new_col = Column(self, window, width, width_min, width_max, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
-        self._cols.append(new_col)
+        self.cols.append(new_col)
         return new_col
 
     def subd(self):
@@ -398,13 +396,8 @@ class Row(LayoutItem):
         return RowSubdivider(self._parent, self)
 
     @property
-    def cols(self):
-        """Columns nested in row."""
-        return self._cols
-
-    @property
     def _items(self):
-        return self._cols
+        return self.cols
 
     @property
     def _space(self):
@@ -524,17 +517,16 @@ class ColumnSubdivider(LayoutItemSubdivider):
         return RowSubdivider(self, self._row)
 
 
-@dataclass(init=False)
 class Layout:
     """Partition screen into a responsive layout of nested rows and columns."""
 
-    # root layout node
-    __root: Column | Row | None = field(default=None, init=False)
-    __root_window: AbstractWindow | None = field(default=None, repr=False)
-
     def __init__(self, __root_window: AbstractWindow | None = None, **kwargs: typing.Unpack[LayoutKwargs]):
+        self.__root = None
         self.__root_window = __root_window
         self.kwargs = kwargs
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}([{self.__root or ''}])"
 
     def row(
         self,
@@ -585,7 +577,7 @@ class Layout:
     @property
     def root(self):
         if self.__root is None:
-            raise errors.LayoutError("No root node in layout.")
+            raise errors.LayoutError("No root node in layout - add a node with 'col' or 'row' methods.")
         return self.__root
 
     @property
