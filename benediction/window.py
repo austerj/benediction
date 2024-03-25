@@ -327,10 +327,8 @@ class AbstractWindow(ABC):
         wrap = (
             wrap
             if wrap is not None
-            else "textwrap"
-            if isinstance(str_, str) and str_ and not str_.isspace()
             else "simple"
-            if wrap_width is not None
+            if isinstance(str_, str) or wrap_width is not None
             else False
         )
 
