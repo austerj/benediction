@@ -328,7 +328,7 @@ class AbstractWindow(ABC):
             wrap
             if wrap is not None
             else "textwrap"
-            if isinstance(str_, str)
+            if isinstance(str_, str) and str_ and not str_.isspace()
             else "simple"
             if wrap_width is not None
             else False
@@ -382,6 +382,8 @@ class AbstractWindow(ABC):
             if wrap == "textwrap":
                 if not isinstance(str_, str):
                     raise ValueError("Cannot wrap list of strings with 'textwrap': use 'simple'.")
+                elif not str_ or str_.isspace():
+                    raise ValueError("Cannot apply 'textwrap' to whitespace string: use 'simple'.")
                 strs = textwrap.wrap(
                     str_,
                     wrap_width,

@@ -109,3 +109,7 @@ def test_simple_wrap():
         "LMN O",
         "PQ",
     ]
+
+    # whitespace is left intact
+    assert simple_wrap(" ", 5) == [" "]
+    assert simple_wrap("    ", 3) == ["   ", " "]
