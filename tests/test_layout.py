@@ -237,7 +237,7 @@ def test_layout_items():
     # fmt: on
 
     # fmt: off
-    assert [type(x) for x in layout.items] == [
+    assert [type(x) for x in layout.flatten()] == [
         Column, # root column
             Row, # row 0
                 Column, # row 0, column 0
@@ -255,3 +255,52 @@ def test_layout_items():
             Window, # row 1
     ]
     # fmt: on
+
+
+def test_relative_dimensions():
+    layout = Layout()
+
+    r0_h, r0_c0_w, r0_c1_mb, r1_h, r1_mr = 0.4, 0.25, 0.15, 0.2, 0.1
+
+    # fmt: off
+    (layout
+        .row(w(), height=r0_h).subd()
+            .col(w(), width=r0_c0_w).col(w(), mb=r0_c1_mb)
+        .row(w(), height=r1_h, mr=r1_mr).col()
+        .row(w())
+    )
+    # fmt: on
+
+    print(layout.rows[0]._style)
+
+    for height in [30, 50, 60]:
+        for width in [30, 60, 90]:
+            layout.update(0, 0, width, height)
+            # row 0
+            assert check_dimensions(layout.rows[0], width, r0_h * height)
+            assert check_dimensions(layout.rows[0].cols[0], r0_c0_w * width, r0_h * height)
+            assert check_dimensions(layout.rows[0].cols[1], (1 - r0_c0_w) * width, (1 - r0_c1_mb) * (r0_h * height))
+            # row 1
+            assert check_dimensions(layout.rows[1], (1 - r1_mr) * width, r1_h * height)
+            # row 2
+            assert check_dimensions(layout.rows[2], width, (1 - r0_h - r1_h) * height)
+
+
+def test_bounds():
+    layout = Layout()
+
+    height_min, height_max = 10, 30
+
+    # fmt: off
+    (layout
+        .row(height_min=height_min, height_max=height_max).subd()
+            .col(w()).col(w())
+        .row(w())
+    )
+    # fmt: on
+
+    # row 0 is constrained by height bounds
+    for height in [5, 15, 25, 30, 35]:
+        layout.update(0, 0, 10, height)
+        assert layout.rows[0].height == 10
+        assert layout.rows[1].height == 10

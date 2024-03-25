@@ -74,7 +74,7 @@ def _sort_with_indices(items: list[T], key: typing.Callable[[T], typing.Any]) ->
 
 
 @dataclass(frozen=True, slots=True, repr=False)
-class LayoutItem(ABC):
+class LayoutItem(typing.Generic[T], ABC):
     _parent: LayoutItem | Layout
     _window: AbstractWindow | None
     # margins
@@ -104,6 +104,17 @@ class LayoutItem(ABC):
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._items})"
+
+    @typing.overload
+    def __getitem__(self, __i: typing.SupportsIndex) -> T:
+        ...
+
+    @typing.overload
+    def __getitem__(self, __s: slice) -> list[T]:
+        ...
+
+    def __getitem__(self, i):
+        return self._items.__getitem__(i)
 
     # properties for agnostic access
     @abstractproperty
@@ -271,7 +282,7 @@ class LayoutItem(ABC):
 
 
 @dataclass(frozen=True, slots=True, repr=False)
-class Column(LayoutItem):
+class Column(LayoutItem["Row"]):
     """Layout column."""
 
     _parent: Row | Layout
@@ -343,7 +354,7 @@ class Column(LayoutItem):
 
 
 @dataclass(frozen=True, slots=True, repr=False)
-class Row(LayoutItem):
+class Row(LayoutItem["Column"]):
     """Layout row."""
 
     _parent: Column | Layout
@@ -603,8 +614,7 @@ class Layout:
         """Order of layout (row / column major)."""
         return "col" if isinstance(self.__root, Column) else "row" if isinstance(self.__root, Row) else None
 
-    @property
-    def items(self) -> list[Row | Column]:
+    def flatten(self) -> list[Row | Column]:
         """Flattened list of all layout items."""
         items = []
 
@@ -619,4 +629,15 @@ class Layout:
     @property
     def windows(self) -> list[AbstractWindow]:
         """Flattened list of all layout windows."""
-        return [item._window for item in self.items if item._window is not None]
+        return [item._window for item in self.flatten() if item._window is not None]
+
+    @typing.overload
+    def __getitem__(self, __i: typing.SupportsIndex) -> Row | Column:
+        ...
+
+    @typing.overload
+    def __getitem__(self, __s: slice) -> list[Row | Column]:
+        ...
+
+    def __getitem__(self, i):
+        return self.root.__getitem__(i)
