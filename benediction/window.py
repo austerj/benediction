@@ -78,7 +78,7 @@ class AbstractWindow(ABC):
     __padding_right: int = field(default=0, init=False, repr=False)
     __padding_bottom: int = field(default=0, init=False, repr=False)
     # styles
-    __style: Style = field(default=Style.default, init=False)
+    __style: Style = field(default=Style.default, init=False, repr=False)
 
     # dimensions
     @property

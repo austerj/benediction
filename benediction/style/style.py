@@ -108,7 +108,7 @@ class StyleKwargs(MainStyleKwargs, typing.TypedDict):
     win_ch: typing.NotRequired[str | None]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, repr=False)
 class Style:
     default: typing.ClassVar[Style]
     # main style
@@ -168,6 +168,16 @@ class Style:
 
     def __int__(self):
         return self.attr
+
+    def __repr__(self):
+        # represent as colors (when defined) and flags (when True)
+        colors = [
+            f"{attr}={getattr(self, attr)}"
+            for attr in ["fg", "bg", "win_fg", "win_bg"]
+            if getattr(self, attr) is not None
+        ]
+        flags = [f"{k}=True" for k in dir(self) if getattr(self, k) == True]
+        return f"{self.__class__.__name__}({', '.join([*colors, *flags])})"
 
     @property
     def attr(self) -> int:
