@@ -12,7 +12,7 @@ T = typing.TypeVar("T")
 
 
 class LayoutKwargs(StyleKwargs):
-    style: typing.NotRequired[Style]
+    style: typing.NotRequired[Style | typing.Literal["default"]]
     # margins
     m: typing.NotRequired[int | float | None]
     my: typing.NotRequired[int | float | None]
@@ -49,7 +49,7 @@ def _map_kwargs(
     pl: int | float | None = None,
     pr: int | float | None = None,
     # style
-    style: Style = Style.default,
+    style: Style | typing.Literal["default"] = Style.default,
     **style_kwargs: typing.Unpack[StyleKwargs],
 ) -> dict[str, typing.Any]:
     return {
@@ -64,7 +64,7 @@ def _map_kwargs(
         "_padding_left": pl if pl is not None else px if px is not None else p if p is not None else 0,
         "_padding_right": pr if pr is not None else px if px is not None else p if p is not None else 0,
         # style
-        "_style": style.derive(**style_kwargs),
+        "_style": (Style.default if style == "default" else style).derive(**style_kwargs),
     }
 
 
