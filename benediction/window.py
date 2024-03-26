@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from benediction import errors, text
-from benediction.style import MainStyleKwargs, Style
+from benediction.style import Style, StyleKwargs
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -261,7 +261,7 @@ class AbstractWindow(ABC):
         to_x_shift: int = 0,
         clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
-        **style_kwargs: typing.Unpack[MainStyleKwargs],
+        **style_kwargs: typing.Unpack[StyleKwargs],
     ):
         """Change the formatting in a region of the window."""
         # infer overflow clipping
@@ -306,7 +306,7 @@ class AbstractWindow(ABC):
         wrap_width: int | None = None,
         textwrap_kwargs: TextWrapKwargs = {},
         attr: int | None = None,
-        **style_kwargs: typing.Unpack[MainStyleKwargs],
+        **style_kwargs: typing.Unpack[StyleKwargs],
     ):
         """Print a (multi-line) string to the window."""
         # infer overflow clipping

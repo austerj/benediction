@@ -5,13 +5,13 @@ from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 
 from benediction import errors
-from benediction.style import Style, StyleKwargs
+from benediction.style import Style, WindowStyleKwargs
 from benediction.window import AbstractWindow, ScreenWindow
 
 T = typing.TypeVar("T")
 
 
-class LayoutKwargs(StyleKwargs):
+class LayoutKwargs(WindowStyleKwargs):
     style: typing.NotRequired[Style | typing.Literal["default"]]
     # margins
     m: typing.NotRequired[int | float | None]
@@ -50,7 +50,7 @@ def _map_kwargs(
     pr: int | float | None = None,
     # style
     style: Style | typing.Literal["default"] = Style.default,
-    **style_kwargs: typing.Unpack[StyleKwargs],
+    **style_kwargs: typing.Unpack[WindowStyleKwargs],
 ) -> dict[str, typing.Any]:
     return {
         # margins with priority given to most specific keyword
@@ -351,15 +351,15 @@ class Column(LayoutItem["Row"]):
     @property
     def _space_max(self):
         return self.width_max
-    
+
     @property
     def height(self):
         return self._parent.height
-    
+
     @property
     def height_min(self):
         return self._parent.height_min
-    
+
     @property
     def height_max(self):
         return self._parent.height_max
@@ -433,15 +433,15 @@ class Row(LayoutItem["Column"]):
     @property
     def _space_max(self):
         return self.height_max
-    
+
     @property
     def width(self):
         return self._parent.width
-    
+
     @property
     def width_min(self):
         return self._parent.width_min
-    
+
     @property
     def width_max(self):
         return self._parent.width_max
@@ -668,31 +668,31 @@ class Layout:
 
     def __getitem__(self, i):
         return self.root.__getitem__(i)
-    
+
     @property
     def height(self):
         if self.__width is None:
             raise errors.LayoutError("Cannot access height before layout has been updated.")
         return self.__height
-    
+
     @property
     def height_min(self):
         return None
-    
+
     @property
     def height_max(self):
         return None
-    
+
     @property
     def width(self):
         if self.__width is None:
             raise errors.LayoutError("Cannot access width before layout has been updated.")
         return self.__width
-    
+
     @property
     def width_min(self):
         return None
-    
+
     @property
     def width_max(self):
         return None

@@ -60,7 +60,7 @@ def _default_to_parent(parent: Style, **kwargs):
     return {k: (getattr(parent, k) if v is None else v) for k, v in kwargs.items()}
 
 
-class MainStyleKwargs(typing.TypedDict):
+class StyleKwargs(typing.TypedDict):
     # main style
     fg: typing.NotRequired[Color | RGB | tailwind.Color | None]
     bg: typing.NotRequired[Color | RGB | tailwind.Color | None]
@@ -83,8 +83,8 @@ class MainStyleKwargs(typing.TypedDict):
     highlight_vertical: typing.NotRequired[bool | None]
 
 
-class StyleKwargs(MainStyleKwargs, typing.TypedDict):
-    # window style
+class WindowStyleKwargs(StyleKwargs, typing.TypedDict):
+    # regular style kwargs + window style kwargs
     win_fg: typing.NotRequired[Color | RGB | tailwind.Color | None]
     win_bg: typing.NotRequired[Color | RGB | tailwind.Color | None]
     win_alternate_character_set: typing.NotRequired[bool | None]
@@ -201,7 +201,7 @@ class Style:
         else:
             return self._win_attr
 
-    def derive(self, **kwargs: typing.Unpack[StyleKwargs]):
+    def derive(self, **kwargs: typing.Unpack[WindowStyleKwargs]):
         """Create new Style derived from existing fields that are not replaced."""
         if not kwargs:
             # skip derivation if no fields are being overwritten
