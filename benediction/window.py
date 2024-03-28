@@ -227,17 +227,25 @@ class AbstractWindow(ABC):
         try:
             if not self._win:
                 self.init(left, top, width, height)
-                self.win.bkgd(self.style.win_ch, self.style.win_attr)
             else:
                 self.resize(left, top, width, height)
+            self.apply_style()
         except curses.error:
             pass
 
     def set_style(self, style: Style):
+        """Assign new Style to window."""
         self.__style = style
-        if self._win:
-            self.win.bkgd(self.style.win_ch, self.style.win_attr)
+        self.apply_style()
         return self
+
+    def apply_style(self, style: Style | None = None):
+        """Apply Style to window."""
+        if self._win:
+            style = self.style if style is None else style
+            self.win.bkgd(style.win_ch, style.win_attr)
+            if style.inner_fg or style.inner_bg:
+                self.format("top", "left", "bottom", "right", fg=style.inner_fg, bg=style.inner_bg)
 
     @property
     def style(self):

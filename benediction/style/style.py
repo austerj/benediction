@@ -84,7 +84,9 @@ class StyleKwargs(typing.TypedDict):
 
 
 class WindowStyleKwargs(StyleKwargs, typing.TypedDict):
-    # regular style kwargs + window style kwargs
+    # regular style kwargs + inner + window style kwargs
+    inner_fg: typing.NotRequired[Color | RGB | tailwind.Color | None]
+    inner_bg: typing.NotRequired[Color | RGB | tailwind.Color | None]
     win_fg: typing.NotRequired[Color | RGB | tailwind.Color | None]
     win_bg: typing.NotRequired[Color | RGB | tailwind.Color | None]
     win_alternate_character_set: typing.NotRequired[bool | None]
@@ -114,6 +116,8 @@ class Style:
     # main style
     fg: Color | None = field(default=None)
     bg: Color | None = field(default=None)
+    inner_fg: Color | None = field(default=None)
+    inner_bg: Color | None = field(default=None)
     # attribute flags
     alternate_character_set: bool = field(default=False, kw_only=True)
     blink: bool = field(default=False, kw_only=True)
@@ -208,7 +212,7 @@ class Style:
             return self
         else:
             # replace strings with Tailwind colors
-            for key in ("fg", "bg", "win_fg", "win_bg"):
+            for key in ("fg", "bg", "inner_fg", "inner_bg", "win_fg", "win_bg"):
                 color = kwargs.get(key)
                 if isinstance(color, str):
                     kwargs[key] = Color_.tw(color)  # type: ignore
