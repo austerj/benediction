@@ -38,3 +38,8 @@ class StyleError(BenedictionError):
 
 class ColorError(StyleError):
     ...
+
+
+# errors raised by space allocation solver
+class SolverError(BenedictionError):
+    ...

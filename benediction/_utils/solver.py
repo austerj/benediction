@@ -1,11 +1,14 @@
 import itertools
+import typing
 from bisect import bisect
 from dataclasses import dataclass, field
 from operator import itemgetter
 
+from benediction import errors
+
 # tuples of bounds provided as problem parameters
 Bound = tuple[int | None, int | None]
-Bounds = tuple[Bound, ...]
+Bounds = typing.Sequence[Bound]
 # solution table mapping space to (x, rate) pairs
 SolutionKeys = tuple[int, ...]
 SolutionValues = tuple[tuple[int, int], ...]
@@ -29,14 +32,17 @@ class SpaceAllocator:
         """Compute the (non-integer) solution to x."""
         # get ref to solution table
         keys, values = self._table
+
         # find region with binary search
         space_key = bisect(keys, space) - 1
         if space_key < 0:
-            raise ValueError("Space is out of range of solution space.")
+            raise errors.SolverError("Space is out of range of solution space.")
+
         # min_space + dx * rate = space <=> dx = (space - min_space) / rate
         x, rate = values[space_key]
         min_space = keys[space_key]
         dx = (space - min_space) / rate
+
         return x + dx
 
     def evaluate(self, x: int):
