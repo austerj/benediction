@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 
 from benediction import errors
+from benediction._utils.solver import SpaceAllocator
 from benediction.style import Style, WindowStyleKwargs
 from benediction.window import AbstractWindow, ScreenWindow
 
@@ -66,11 +67,6 @@ def _map_kwargs(
         # style
         "_style": (Style.default if style == "default" else style).derive(**style_kwargs),
     }
-
-
-def _sort_with_indices(items: list[T], key: typing.Callable[[T], typing.Any]) -> tuple[tuple[int], tuple[T]]:
-    """Sort items and return tuple of original indices and sorted items."""
-    return tuple(zip(*sorted(enumerate(items), key=lambda x: key(x[1]))))
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -182,12 +178,16 @@ class LayoutItem(typing.Generic[T], ABC):
 
     def _clip(self, space: int) -> int:
         """Clip to item boundaries."""
-        space_ = space
-        if self._space_min is not None:
-            space_ = max(space_, self._space_min)
-        if self._space_max is not None:
-            space_ = min(space_, self._space_max)
-        return space_
+        return (
+            # lower bound if above
+            self._space_min
+            if self._space_min is not None and space < self._space_min
+            # upper bound if below
+            else self._space_max
+            if self._space_max is not None and space > self._space_max
+            # else return arg
+            else space
+        )
 
     @abstractmethod
     def subd(self):
@@ -239,46 +239,45 @@ class LayoutItem(typing.Generic[T], ABC):
     def _allocate_space(self, space: int):
         """Compute allocated space for each item and return iterator of item-space pairs."""
         items = self._items
+        idx_to_space: dict[int, int] = {}
 
-        # initialize dynamic space allocation
-        dynamic_space = space - sum(item._space if isinstance(item._space, int) else 0 for item in items)
-        remaining_dynamic_space = dynamic_space
-        n_implicit_items = sum(item._space is None for item in items)
-        n_dynamic_items = sum(not isinstance(item._space, int) for item in items)
-        dynamic_items_allocated = 0
+        allocated_space = 0
+        implicit_items: list[tuple[int, LayoutItem]] = []
 
-        # explicit and implicit ratios
-        explicit_ratio = sum(item._space if isinstance(item._space, float) else 0.0 for item in items)
-        if not (0.0 <= explicit_ratio <= 1.0):
-            raise errors.InsufficientSpaceError(f"Cannot dynamically allocate more space than available.")
-        implicit_ratio = (1.0 - explicit_ratio) / n_implicit_items if n_implicit_items > 0 else 0.0
-
-        # raise if unable to allocate at least 1 space unit per item
-        if dynamic_space < n_dynamic_items:
-            raise errors.InsufficientSpaceError()
-
-        # compute space across items with least-constrained dynamic item last for remainder
-        items_idx, items_sorted = _sort_with_indices(
-            items, key=lambda item: (item._space is None, item._space_max is None, item._space_min is None)
-        )
-        items_space: list[int] = []
-        for item in items_sorted:
-            if isinstance(item_space := item._space, int):
-                item_space = item_space
+        # allocate absolute and relative items
+        for idx, item in enumerate(items):
+            if item._space is None:
+                # delay allocation for implicit items
+                implicit_items.append((idx, item))
+                continue
+            if isinstance(item._space, int):
+                # absolute is simple - no bounds, always equals assigned value
+                item_space = item._space
             else:
-                # assign all remaining space if last dynamic item and not relative
-                if dynamic_items_allocated == n_dynamic_items - 1 and item_space is None:
-                    item_space = item._clip(remaining_dynamic_space)
-                else:
-                    # else assign ratio of dynamic space
-                    item_ratio = implicit_ratio if item_space is None else item_space
-                    item_space = item._clip(round(dynamic_space * item_ratio))
-                    remaining_dynamic_space -= item_space
-                dynamic_items_allocated += 1
-            items_space.append(item_space)
+                # relative may have (absolute) bounds
+                item_space = item._clip(int(item._space * space))
+            # store in dict to retain mapping to original order
+            idx_to_space[idx] = item_space
+            allocated_space += item_space
+
+        # allocate implicit elements based on remaining space
+        if implicit_items:
+            bounds = tuple(
+                (i[1]._space_min, i[1]._space_max)
+                for i in implicit_items
+                if not (i[1]._space_min is None and i[1]._space_max is None)
+            )
+            n_implicit_unconstrained = len(implicit_items) - len(bounds)
+            remaining_space = space - allocated_space
+
+            implicit_items_space = SpaceAllocator(bounds, n_implicit_unconstrained).solve(remaining_space)
+
+            # TODO: solve for distribution of integers (so int conversion not necessary)
+            for i, (idx, _) in enumerate(implicit_items):
+                idx_to_space[idx] = int(implicit_items_space[i])
 
         # return items and their allocated space for iteration
-        return zip(self._items, (items_space[item_idx] for item_idx in items_idx))
+        return zip(self._items, (idx_to_space[i] for i in range(len(items))))
 
 
 @dataclass(frozen=True, slots=True, repr=False)
