@@ -156,13 +156,15 @@ class Style:
     # window char
     win_ch: str = field(default=" ", kw_only=True)
     # integer representation of attribute flags
-    _attr: int = field(init=False, repr=False)
-    _win_attr: int = field(init=False, repr=False)
+    _flag_attr: int = field(init=False, repr=False, compare=False)
+    _win_flag_attr: int = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
-        # set integer representation of style
-        object.__setattr__(self, "_attr", _bitor(v for k, v in _ATTRIBUTES.items() if getattr(self, k)))
-        object.__setattr__(self, "_win_attr", _bitor(v for k, v in _ATTRIBUTES.items() if getattr(self, f"win_{k}")))
+        # set integer representations of flag attributes
+        _flag_attr = _bitor(v for k, v in _ATTRIBUTES.items() if getattr(self, k))
+        _win_flag_attr = _bitor(v for k, v in _ATTRIBUTES.items() if getattr(self, f"win_{k}"))
+        object.__setattr__(self, "_flag_attr", _flag_attr)
+        object.__setattr__(self, "_win_flag_attr", _win_flag_attr)
 
     def __int__(self):
         return self.attr
@@ -180,24 +182,24 @@ class Style:
     @property
     def attr(self) -> int:
         if self.fg is not None and self.bg is not None:
-            return ColorPair_(self.fg, self.bg) | self._attr
+            return ColorPair_(self.fg, self.bg) | self._flag_attr
         elif self.fg is not None and self.bg is None:
-            return self.fg.fg | self._attr
+            return self.fg.fg | self._flag_attr
         elif self.bg is not None and self.fg is None:
-            return self.bg.bg | self._attr
+            return self.bg.bg | self._flag_attr
         else:
-            return self._attr
+            return self._flag_attr
 
     @property
     def win_attr(self) -> int:
         if self.win_fg is not None and self.win_bg is not None:
-            return ColorPair_(self.win_fg, self.win_bg) | self._win_attr
+            return ColorPair_(self.win_fg, self.win_bg) | self._win_flag_attr
         elif self.win_fg is not None and self.win_bg is None:
-            return self.win_fg.fg | self._win_attr
+            return self.win_fg.fg | self._win_flag_attr
         elif self.win_bg is not None and self.win_fg is None:
-            return self.win_bg.bg | self._win_attr
+            return self.win_bg.bg | self._win_flag_attr
         else:
-            return self._win_attr
+            return self._win_flag_attr
 
     def derive(self, **kwargs: typing.Unpack[WindowStyleKwargs]):
         """Create new Style derived from existing fields that are not replaced."""
