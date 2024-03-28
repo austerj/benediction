@@ -184,6 +184,14 @@ class Style:
         return f"{self.__class__.__name__}({', '.join([*colors, *flags])})"
 
     @property
+    def default_inner_fg(self):
+        return self.inner_fg if self.inner_fg is not None else self.fg
+
+    @property
+    def default_inner_bg(self):
+        return self.inner_bg if self.inner_bg is not None else self.bg
+
+    @property
     def attr(self) -> int:
         if self.fg is not None and self.bg is not None:
             return ColorPair_(self.fg, self.bg) | self._flag_attr
