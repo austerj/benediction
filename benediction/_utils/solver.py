@@ -1,5 +1,6 @@
 import itertools
 from bisect import bisect
+from dataclasses import dataclass, field
 from operator import itemgetter
 
 # tuples of bounds provided as problem parameters
@@ -8,17 +9,21 @@ Bounds = tuple[Bound, ...]
 # solution table mapping space to (x, rate) pairs
 SolutionKeys = tuple[int, ...]
 SolutionValues = tuple[tuple[int, int], ...]
+SolutionTable = tuple[SolutionKeys, SolutionValues]
 
 # TODO: solve integer allocation problem starting from continuous solution
+@dataclass(frozen=True, slots=True)
 class SpaceAllocator:
     """Solver for the even allocation of a budget of integers under constraints."""
 
-    def __init__(self, bounds: Bounds, n_unconstrained: int):
-        # store problem parameters
-        self.bounds = bounds
-        self.n_unconstrained = n_unconstrained
-        # construct lookup table
-        self._table = _solve_table(bounds, n_unconstrained)
+    # problem parameters
+    bounds: Bounds
+    n_unconstrained: int
+    # solution table
+    _table: SolutionTable = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        object.__setattr__(self, "_table", _solve_table(self.bounds, self.n_unconstrained))
 
     def _solve_x(self, space: int):
         """Compute the (non-integer) solution to x."""
@@ -63,7 +68,7 @@ def _flatten_bounds(bounds: Bounds) -> list[tuple[int, bool]]:
     return sorted(itertools.chain(lower_bounds, upper_bounds), key=itemgetter(0))
 
 
-def _solve_table(bounds: Bounds, n_unconstrained: int) -> tuple[SolutionKeys, SolutionValues]:
+def _solve_table(bounds: Bounds, n_unconstrained: int) -> SolutionTable:
     """Compute space |-> (x, rate) solution table of linear regions for bounds."""
     # construct lookup table
     flat_bounds = _flatten_bounds(bounds)
