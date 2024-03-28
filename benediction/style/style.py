@@ -48,7 +48,7 @@ _ATTRIBUTES: dict[Attribute, int] = {
 }
 
 
-def _bitor(xs: tuple[int, ...]):
+def _bitor(xs: typing.Iterable[int]):
     # bitwise or of all provided integers
     value = 0
     for x in xs:
@@ -161,10 +161,8 @@ class Style:
 
     def __post_init__(self):
         # set integer representation of style
-        object.__setattr__(self, "_attr", _bitor(tuple(v for k, v in _ATTRIBUTES.items() if getattr(self, k))))
-        object.__setattr__(
-            self, "_win_attr", _bitor(tuple(v for k, v in _ATTRIBUTES.items() if getattr(self, f"win_{k}")))
-        )
+        object.__setattr__(self, "_attr", _bitor(v for k, v in _ATTRIBUTES.items() if getattr(self, k)))
+        object.__setattr__(self, "_win_attr", _bitor(v for k, v in _ATTRIBUTES.items() if getattr(self, f"win_{k}")))
 
     def __int__(self):
         return self.attr
