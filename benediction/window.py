@@ -12,15 +12,15 @@ from benediction.style import Style, StyleKwargs
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
-# map string list to anchor value
+# map string sequence to anchor value
 HorizontalAnchor = typing.Literal["left", "center", "right"]
 VerticalAnchor = typing.Literal["top", "middle", "bottom"]
-_XANCHOR: dict[HorizontalAnchor, typing.Callable[[list[str]], int]] = {
+_XANCHOR: dict[HorizontalAnchor, typing.Callable[[typing.Sequence[str]], int]] = {
     "left": lambda strs: 0,
     "center": lambda strs: -max(len(s) for s in strs) // 2 + 1,
     "right": lambda strs: -max(len(s) for s in strs) + 1,
 }
-_YANCHOR: dict[VerticalAnchor, typing.Callable[[list[str]], int]] = {
+_YANCHOR: dict[VerticalAnchor, typing.Callable[[typing.Sequence[str]], int]] = {
     "top": lambda strs: 0,
     "middle": lambda strs: -len(strs) // 2 + 1,
     "bottom": lambda strs: -len(strs) + 1,
@@ -291,7 +291,7 @@ class AbstractWindow(ABC):
 
     def print(
         self,
-        str_: str | list[str],
+        str_: typing.Sequence[str],
         y: int | float | VerticalPosition = "top",
         x: int | float | HorizontalPosition = "left",
         y_anchor: VerticalAnchor | None = None,
@@ -329,7 +329,7 @@ class AbstractWindow(ABC):
         if wrap:
             if wrap_width is None:
                 if not isinstance(str_, str):
-                    raise ValueError("Cannot cannot infer wrap width from list of strings.")
+                    raise ValueError("Cannot cannot infer wrap width unless argument is a string.")
                 # infer wrap width s.t. lines wrap at point of horizontal overflow
                 elif x_anchor == "center":
                     # NOTE: this ties directly to the middle anchor "rounding down", which leads
@@ -370,10 +370,10 @@ class AbstractWindow(ABC):
                     r = self.right_outer if x_anchor.endswith("outer") else self.right
                     wrap_width = r - x_ + 1
                 wrap_width = max(wrap_width, 1)
-            # apply wrap to (list of) strings
+            # apply wrap to (sequence of) strings
             if wrap == "textwrap":
                 if not isinstance(str_, str):
-                    raise ValueError("Cannot wrap list of strings with 'textwrap': use 'simple'.")
+                    raise ValueError("Cannot wrap non-string with 'textwrap': use 'simple'.")
                 elif not str_ or str_.isspace():
                     raise ValueError("Cannot apply 'textwrap' to whitespace string: use 'simple'.")
                 strs = textwrap.wrap(
@@ -384,10 +384,10 @@ class AbstractWindow(ABC):
             else:
                 strs = text.simple_wrap(str_, wrap_width)
         elif isinstance(str_, str):
-            # not wrapping string - so just contain in list
-            strs = [str_]
+            # not wrapping string - so just contain in tuple
+            strs = (str_,)
         else:
-            # proceed with list of strings provided as param
+            # proceed with sequence of strings provided as arg
             strs = str_
 
         # align text

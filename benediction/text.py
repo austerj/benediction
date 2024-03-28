@@ -1,29 +1,29 @@
 import typing
 
 HorizontalAlignment = typing.Literal["left", "center", "right"]
-_XALIGN: dict[HorizontalAlignment, typing.Callable[[list[str], int], list[str]]] = {
-    "left": lambda strs, width: [f"{s:<{width}}" for s in strs],
-    "center": lambda strs, width: [f"{s:^{width}}" for s in strs],
-    "right": lambda strs, width: [f"{s:>{width}}" for s in strs],
+_XALIGN: dict[HorizontalAlignment, typing.Callable[[typing.Iterable[str], int], tuple[str, ...]]] = {
+    "left": lambda strs, width: tuple(f"{s:<{width}}" for s in strs),
+    "center": lambda strs, width: tuple(f"{s:^{width}}" for s in strs),
+    "right": lambda strs, width: tuple(f"{s:>{width}}" for s in strs),
 }
-_XSTRIP: dict[HorizontalAlignment, typing.Callable[[list[str]], list[str]]] = {
-    "left": lambda strs: [s.lstrip() for s in strs],
-    "center": lambda strs: [s.strip() for s in strs],
-    "right": lambda strs: [s.rstrip() for s in strs],
+_XSTRIP: dict[HorizontalAlignment, typing.Callable[[typing.Iterable[str]], tuple[str, ...]]] = {
+    "left": lambda strs: tuple(s.lstrip() for s in strs),
+    "center": lambda strs: tuple(s.strip() for s in strs),
+    "right": lambda strs: tuple(s.rstrip() for s in strs),
 }
 
 
-def align(strs: list[str], alignment: HorizontalAlignment):
+def align(strs: typing.Iterable[str], alignment: HorizontalAlignment) -> tuple[str, ...]:
     """Horizontal alignment of strings."""
     # strip whitespace
-    strs = _XSTRIP[alignment](strs)
+    strs = tuple(_XSTRIP[alignment](strs))
     width = max(len(s) for s in strs)
     # align each row in same width
     return _XALIGN[alignment](strs, width)
 
 
-def simple_wrap(strs: str | list[str], width: int, ignore_leading_whitespace: bool = True) -> list[str]:
-    """Wrap (list of) strings into strings of length less than or equal to width."""
+def simple_wrap(strs: typing.Iterable[str], width: int, ignore_leading_whitespace: bool = True) -> list[str]:
+    """Wrap (iterable of) strings into strings of length less than or equal to width."""
     # special case: just return every char from flattened list
     if width <= 1:
         if isinstance(strs, str):
