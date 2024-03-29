@@ -7,7 +7,8 @@ import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from benediction import errors, text
+from benediction import errors
+from benediction._utils import text
 from benediction.style import Style, StyleKwargs
 from benediction.style.style import WindowStyleKwargs
 

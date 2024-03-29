@@ -1,19 +1,19 @@
 import typing
 
 HorizontalAlignment = typing.Literal["left", "center", "right"]
-_XALIGN: dict[HorizontalAlignment, typing.Callable[[typing.Iterable[str], int], tuple[str, ...]]] = {
-    "left": lambda strs, width: tuple(f"{s:<{width}}" for s in strs),
-    "center": lambda strs, width: tuple(f"{s:^{width}}" for s in strs),
-    "right": lambda strs, width: tuple(f"{s:>{width}}" for s in strs),
+_XALIGN: dict[HorizontalAlignment, typing.Callable[[typing.Iterable[str], int], list[str]]] = {
+    "left": lambda strs, width: [f"{s:<{width}}" for s in strs],
+    "center": lambda strs, width: [f"{s:^{width}}" for s in strs],
+    "right": lambda strs, width: [f"{s:>{width}}" for s in strs],
 }
-_XSTRIP: dict[HorizontalAlignment, typing.Callable[[typing.Iterable[str]], tuple[str, ...]]] = {
-    "left": lambda strs: tuple(s.lstrip() for s in strs),
-    "center": lambda strs: tuple(s.strip() for s in strs),
-    "right": lambda strs: tuple(s.rstrip() for s in strs),
+_XSTRIP: dict[HorizontalAlignment, typing.Callable[[typing.Iterable[str]], list[str]]] = {
+    "left": lambda strs: [s.lstrip() for s in strs],
+    "center": lambda strs: [s.strip() for s in strs],
+    "right": lambda strs: [s.rstrip() for s in strs],
 }
 
 
-def align(strs: typing.Iterable[str], alignment: HorizontalAlignment) -> tuple[str, ...]:
+def align(strs: typing.Iterable[str], alignment: HorizontalAlignment) -> list[str]:
     """Horizontal alignment of strings."""
     # strip whitespace
     strs = tuple(_XSTRIP[alignment](strs))
