@@ -69,7 +69,7 @@ def _map_kwargs(
     }
 
 
-@dataclass(frozen=True, slots=True, repr=False)
+@dataclass(slots=True, repr=False)
 class LayoutItem(typing.Generic[T], ABC):
     _parent: LayoutItem | Layout
     _window: AbstractWindow | None
@@ -162,6 +162,10 @@ class LayoutItem(typing.Generic[T], ABC):
     def clear(self):
         """Clear window and all nested layout items."""
         self.apply(lambda w: w.clear())
+
+    def update_style(self, **kwargs: typing.Unpack[WindowStyleKwargs]):
+        """Update the styling of window and all nested layout items."""
+        self.apply(lambda w: w.update_style(**kwargs))
 
     @abstractmethod
     def update(self, left: int, top: int, width: int, height: int):
@@ -289,7 +293,7 @@ class LayoutItem(typing.Generic[T], ABC):
         return zip(self._items, (idx_to_space[i] for i in range(len(items))))
 
 
-@dataclass(frozen=True, slots=True, repr=False)
+@dataclass(slots=True, repr=False)
 class Column(LayoutItem["Row"]):
     """Layout column."""
 
@@ -373,7 +377,7 @@ class Column(LayoutItem["Row"]):
         return self._parent.height_max
 
 
-@dataclass(frozen=True, slots=True, repr=False)
+@dataclass(slots=True, repr=False)
 class Row(LayoutItem["Column"]):
     """Layout row."""
 
