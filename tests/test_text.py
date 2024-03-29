@@ -111,5 +111,5 @@ def test_simple_wrap():
     ]
 
     # whitespace is left intact
-    assert simple_wrap(" ", 5) == (" ",)
-    assert simple_wrap("    ", 3) == ("   ", " ")
+    assert simple_wrap(" ", 5) == [" "]
+    assert simple_wrap("    ", 3) == ["   ", " "]
