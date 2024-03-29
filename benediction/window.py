@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 
 from benediction import errors, text
 from benediction.style import Style, StyleKwargs
+from benediction.style.style import WindowStyleKwargs
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -238,6 +239,10 @@ class AbstractWindow(ABC):
         self.__style = style
         self.apply_style()
         return self
+
+    def update_style(self, **kwargs: typing.Unpack[WindowStyleKwargs]):
+        """Update existing Style of window."""
+        return self.set_style(self.style.derive(**kwargs))
 
     def apply_style(self, style: Style | None = None):
         """Apply Style to window."""
