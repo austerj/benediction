@@ -95,7 +95,18 @@ class LayoutItem(typing.Generic[T], ABC):
         if isinstance(self._space, int):
             if not (self._space_min is None and self._space_max is None):
                 raise errors.LayoutError(f"Cannot use bounds with absolute (integer) {self._space_name}.")
-        elif self._space_min is not None and self._space_max is not None and self._space_min >= self._space_max:
+        elif (
+            # non-negative bounds
+            (self._space_min is not None and self._space_min < 0)
+            or (self._space_max is not None and self._space_max < 0)
+        ):
+            raise errors.LayoutError(f"Bounds must be strictly greater than 0.")
+        elif (
+            # consistent bounds
+            self._space_min is not None
+            and self._space_max is not None
+            and self._space_min >= self._space_max
+        ):
             raise errors.LayoutError(f"Lower bound must be strictly less than upper bound.")
 
     def __repr__(self):
@@ -132,6 +143,11 @@ class LayoutItem(typing.Generic[T], ABC):
     def _space_max(self) -> int | None:
         """Maximum space of item."""
         raise NotImplementedError
+
+    @property
+    def bounds(self):
+        """Tuple of lower- and upper bound."""
+        return (self._space_min, self._space_max)
 
     @property
     def window(self):
@@ -262,15 +278,9 @@ class LayoutItem(typing.Generic[T], ABC):
 
         # allocate implicit elements based on remaining space
         if implicit_items:
-            bounds = tuple(
-                (i[1]._space_min, i[1]._space_max)
-                for i in implicit_items
-                if not (i[1]._space_min is None and i[1]._space_max is None)
-            )
-            n_implicit_unconstrained = len(implicit_items) - len(bounds)
+            bounds = tuple(item[1].bounds for item in implicit_items)
             remaining_space = space - allocated_space
-
-            implicit_items_space = SpaceAllocator(bounds, n_implicit_unconstrained).solve(remaining_space)
+            implicit_items_space = SpaceAllocator(bounds).solve(remaining_space)
 
             for i, (idx, _) in enumerate(implicit_items):
                 idx_to_space[idx] = implicit_items_space[i]

@@ -15,18 +15,18 @@ SolutionValues = tuple[tuple[int, int], ...]
 SolutionTable = tuple[SolutionKeys, SolutionValues]
 
 
+# TODO: use implicit min. of 1 for all elements
 @dataclass(frozen=True, slots=True)
 class SpaceAllocator:
     """Solver for the even allocation of a budget of integers under constraints."""
 
     # problem parameters
     bounds: Bounds
-    n_unconstrained: int
     # solution table
     _table: SolutionTable = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
-        object.__setattr__(self, "_table", _solve_table(self.bounds, self.n_unconstrained))
+        object.__setattr__(self, "_table", _solve_table(self.bounds))
 
     def _solve_x(self, space: int):
         """Compute the (non-integer) solution to x."""
@@ -53,11 +53,11 @@ class SpaceAllocator:
                     # lower bound if x is above it
                     b[0] if b[0] is not None and x < b[0]
                     # upper bound if x is below it
-                    else b[1] if b[1] is not None and x > b[1] else x
+                    else b[1] if b[1] is not None and x > b[1]
+                    # else value
+                    else x
                     for b in self.bounds
                 ),
-                # unconstrained items
-                (x for _ in range(self.n_unconstrained)),
             )
         )
 
@@ -75,14 +75,14 @@ def _flatten_bounds(bounds: Bounds) -> list[tuple[int, bool]]:
     return sorted(itertools.chain(lower_bounds, upper_bounds), key=itemgetter(0))
 
 
-def _solve_table(bounds: Bounds, n_unconstrained: int) -> SolutionTable:
+def _solve_table(bounds: Bounds) -> SolutionTable:
     """Compute space |-> (x, rate) solution table of linear regions for bounds."""
     # construct lookup table
     flat_bounds = _flatten_bounds(bounds)
 
     # initialize vars
-    min_space_total = 0  # min constraints are accumulated in loop
-    rate = sum(b[0] is None for b in bounds) + n_unconstrained  # initial rate is 1 per non-lower-bounded element
+    min_region = 0  # constraints are accumulated in loop
+    rate = sum(b[0] is None for b in bounds)  # initial rate is 1 per non-lower-bounded element
 
     # construct intermediary table mapping values of x to rates of space allocation
     x_table: dict[int, int] = {0: rate}
@@ -93,20 +93,20 @@ def _solve_table(bounds: Bounds, n_unconstrained: int) -> SolutionTable:
         else:
             # if lower bound: rate and total min increases
             rate += 1
-            min_space_total += b
+            min_region += b
         x_table[b] = rate
 
     # construct final table mapping space to x-value and rates on linear sections
     # NOTE: since bounds are pre-sorted, insertion order guarantees that keys are sorted
     keys: list[int] = []
     values: list[tuple[int, int]] = []
-    min_space = min_space_total
+    region_start = min_region
     prev_x, prev_rate = 0, 0
 
     for x, rate in x_table.items():
         # accumulate the mapping from regions of space to values of x
-        min_space += (x - prev_x) * prev_rate
-        keys.append(min_space)
+        region_start += (x - prev_x) * prev_rate
+        keys.append(region_start)
         values.append((x, rate))
         prev_x, prev_rate = x, rate
 
@@ -120,21 +120,19 @@ def _distribute_integers(items: tuple[float, ...]) -> tuple[int, ...]:
 
     # NOTE: any binding upper bounds in the original problem will have a difference of 0 to the
     # floored version; since we sort by the difference, these values will not appear before all
-    # integers have been added back
-    diff_sorted = sorted(
-        enumerate(c - f for f, c in zip(floored_items, items)),
-        key=itemgetter(1),
-        reverse=True,
-    )
-    # rounding is fine here; items sum is float, but value itself represents an integer (since it
-    # solves for integer total space)
-    missing_ints = round(sum(items) - sum(floored_items))
+    # missing integers have been added
+    diff_sorted = sorted(enumerate(f - c for f, c in zip(floored_items, items)), key=itemgetter(1))
+
+    # rounding is fine here; items sum is (negative) float, but value itself represents an integer
+    # (since it solves for integer total space)
+    int_truncation = round(sum(map(itemgetter(1), diff_sorted)))
 
     # add integers in order of largest deviation to continuous solution
     for i, _ in diff_sorted:
-        if missing_ints <= 0:
+        # >= 0 means all required ints have been added back
+        if int_truncation >= 0:
             break
         floored_items[i] += 1
-        missing_ints -= 1
+        int_truncation += 1
 
     return tuple(floored_items)
