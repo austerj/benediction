@@ -14,7 +14,7 @@ def w():
     return Window()
 
 
-def test_dynamic_dimensions():
+def test_implicit_layout():
     layout = Layout()
 
     r0_h = 10
@@ -287,18 +287,34 @@ def test_relative_layout():
 def test_bounds():
     layout = Layout()
 
-    height_min, height_max = 10, 30
+    r0_h_min, r0_h_max = 10, 30
+    r1_h_min, r1_h_max = 5, 10
+    r1_c0_w_min, r1_c0_w_max = 20, 25
+    r1_c1_w = 2
 
     # fmt: off
     (layout
-        .row(height_min=height_min, height_max=height_max).subd()
-            .col(w()).col(w())
+        .row(w(), height_min=r0_h_min, height_max=r0_h_max)
+        .row(w(), height_min=r1_h_min, height_max=r1_h_max).subd()
+            .col(w(), width_min=r1_c0_w_min, width_max=r1_c0_w_max).col(w(), width=r1_c1_w).col(w())
         .row(w())
     )
     # fmt: on
 
-    # row 0 is constrained by height bounds
-    for height in [5, 15, 25, 30, 35]:
-        layout.update(0, 0, 10, height)
-        assert layout.rows[0].height == 10
-        assert layout.rows[1].height == 10
+    # height must be between 15 (+1 for last row) and 60 (+1 for last row) due to constraints
+    for height in [16, 40, 61]:
+        # 20 (+1+2) and 25 (+1+2) due to constraints
+        for width in [23, 25, 27]:
+            layout.update(0, 0, width, height)
+            # row 0
+            assert layout[0].window.width == width
+            assert r0_h_min <= layout[0].window.height <= r0_h_max
+            # row 1
+            assert layout[1].window.width == width
+            assert r1_h_min <= layout[1].window.height <= r1_h_max
+            assert r1_c0_w_min <= layout[1][0].window.width <= r1_c0_w_max
+            assert layout[1][1].window.width == r1_c1_w
+            assert layout[1][2].window.width == width - r1_c1_w - layout[1][0].window.width
+            # row 2
+            assert layout[2].window.width == width
+            assert check_dimensions(layout[2], width, height - layout[0].window.height - layout[1].window.height)
