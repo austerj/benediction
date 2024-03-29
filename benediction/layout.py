@@ -87,6 +87,8 @@ class LayoutItem(typing.Generic[T], ABC):
     _style: Style = field(default=Style.default, kw_only=True)
     # name of space attribute
     _space_name: typing.ClassVar[str]
+    # space allocator
+    _solver: SpaceAllocator | None = field(default=None, init=False)
 
     def __post_init__(self):
         if self._window is not None:
@@ -284,8 +286,13 @@ class LayoutItem(typing.Generic[T], ABC):
         if implicit_items:
             bounds = tuple(item[1].bounds for item in implicit_items)
             remaining_space = space - allocated_space
-            implicit_items_space = SpaceAllocator(bounds).solve(remaining_space)
 
+            # update solver if bounds have changed
+            if not self._solver or self._solver.bounds != bounds:
+                self._solver = SpaceAllocator(bounds)
+
+            # solve for the constrained distribution of integers and add results to space dict
+            implicit_items_space = self._solver.solve(remaining_space)
             for i, (idx, _) in enumerate(implicit_items):
                 idx_to_space[idx] = implicit_items_space[i]
 
