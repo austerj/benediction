@@ -14,7 +14,7 @@ SolutionKeys = tuple[int, ...]
 SolutionValues = tuple[tuple[int, int], ...]
 SolutionTable = tuple[SolutionKeys, SolutionValues]
 
-# TODO: solve integer allocation problem starting from continuous solution
+
 @dataclass(frozen=True, slots=True)
 class SpaceAllocator:
     """Solver for the even allocation of a budget of integers under constraints."""
@@ -45,7 +45,7 @@ class SpaceAllocator:
 
         return x + dx
 
-    def evaluate(self, x: int):
+    def evaluate(self, x: float) -> tuple[float, ...]:
         """Evaluate the bounded distribution for the specified value of x."""
         return tuple(
             itertools.chain(
@@ -62,9 +62,10 @@ class SpaceAllocator:
         )
 
     def solve(self, space: int):
-        """Solve the allocation problem and return the bounded items."""
+        """Solve the integer allocation problem and return the bounded items."""
         x = self._solve_x(space)
-        return self.evaluate(x)  # type: ignore
+        items = self.evaluate(x)
+        return _distribute_integers(items)
 
 
 def _flatten_bounds(bounds: Bounds) -> list[tuple[int, bool]]:
@@ -96,7 +97,7 @@ def _solve_table(bounds: Bounds, n_unconstrained: int) -> SolutionTable:
         x_table[b] = rate
 
     # construct final table mapping space to x-value and rates on linear sections
-    # NOTE: since bounds are pre-sorted, ansertion order guarantees that keys are sorted
+    # NOTE: since bounds are pre-sorted, insertion order guarantees that keys are sorted
     keys: list[int] = []
     values: list[tuple[int, int]] = []
     min_space = min_space_total
@@ -110,3 +111,30 @@ def _solve_table(bounds: Bounds, n_unconstrained: int) -> SolutionTable:
         prev_x, prev_rate = x, rate
 
     return tuple(keys), tuple(values)
+
+
+def _distribute_integers(items: tuple[float, ...]) -> tuple[int, ...]:
+    """Optimally distribute integers from the continuous solution to the allocation problem."""
+    # since the bounds are integer, the floored value will not break the constraints
+    floored_items = [int(item) for item in items]
+
+    # NOTE: any binding upper bounds in the original problem will have a difference of 0 to the
+    # floored version; since we sort by the difference, these values will not appear before all
+    # integers have been added back
+    diff_sorted = sorted(
+        enumerate(c - f for f, c in zip(floored_items, items)),
+        key=itemgetter(1),
+        reverse=True,
+    )
+    # rounding is fine here; items sum is float, but value itself represents an integer (since it
+    # solves for integer total space)
+    missing_ints = round(sum(items) - sum(floored_items))
+
+    # add integers in order of largest deviation to continuous solution
+    for i, _ in diff_sorted:
+        if missing_ints <= 0:
+            break
+        floored_items[i] += 1
+        missing_ints -= 1
+
+    return tuple(floored_items)

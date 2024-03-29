@@ -272,9 +272,8 @@ class LayoutItem(typing.Generic[T], ABC):
 
             implicit_items_space = SpaceAllocator(bounds, n_implicit_unconstrained).solve(remaining_space)
 
-            # TODO: solve for distribution of integers (so int conversion not necessary)
             for i, (idx, _) in enumerate(implicit_items):
-                idx_to_space[idx] = int(implicit_items_space[i])
+                idx_to_space[idx] = implicit_items_space[i]
 
         # return items and their allocated space for iteration
         return zip(self._items, (idx_to_space[i] for i in range(len(items))))
