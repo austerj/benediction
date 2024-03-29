@@ -282,6 +282,9 @@ class LayoutItem(typing.Generic[T], ABC):
             idx_to_space[idx] = item_space
             allocated_space += item_space
 
+        if allocated_space > space:
+            raise errors.InsufficientSpaceError("Allocated more space than available.")
+
         # allocate implicit elements based on remaining space
         if implicit_items:
             bounds = tuple(item[1].bounds for item in implicit_items)
@@ -293,6 +296,9 @@ class LayoutItem(typing.Generic[T], ABC):
 
             # solve for the constrained distribution of integers and add results to space dict
             implicit_items_space = self._solver.solve(remaining_space)
+            if any(item_space <= 0 for item_space in implicit_items_space):
+                raise errors.InsufficientSpaceError("Failed to allocate implicit space.")
+
             for i, (idx, _) in enumerate(implicit_items):
                 idx_to_space[idx] = implicit_items_space[i]
 
