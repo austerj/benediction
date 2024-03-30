@@ -82,6 +82,11 @@ class AbstractWindow(ABC):
     # styles
     _style: Style = field(default=Style.default, init=False, repr=False)
 
+    @property
+    def ready(self) -> bool:
+        """Flag denoting if the window is ready (has dimensions assigned)."""
+        return self._width is not None
+
     # dimensions
     @property
     def width_outer(self):
@@ -247,8 +252,8 @@ class AbstractWindow(ABC):
 
     def apply_style(self, style: Style | None = None):
         """Apply Style to window."""
-        if self._win:
-            style = self.style if style is None else style
+        style = self.style if style is None else style
+        if self.ready:
             self.win.bkgd(style.win_ch, style.win_attr)
             if (inner_fg := style.default_inner_fg) is not None or (inner_bg := style.default_inner_bg) is not None:
                 self.format("top", "left", "bottom", "right", fg=inner_fg, bg=inner_bg)
