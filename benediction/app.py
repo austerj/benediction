@@ -21,6 +21,13 @@ _ERRORS: dict[ErrorType, typing.Type[Exception]] = {
     "window": errors.WindowError,
 }
 
+CursorVisibility = typing.Literal[typing.Literal["invisible", "normal", "very"]]
+_CURSOR_VISIBILITY: dict[CursorVisibility, int] = {
+    "invisible": 0,
+    "normal": 1,
+    "very": 2,
+}
+
 
 @dataclass
 class Application(ABC):
@@ -28,7 +35,7 @@ class Application(ABC):
     running: bool | None = field(default=None, init=False)
     # behavior flags
     allow_rerun: typing.ClassVar[bool] = False
-    show_cursor: typing.ClassVar[bool] = False
+    cursor_visibility: typing.ClassVar[CursorVisibility] = "invisible"
     refresh_rate: typing.ClassVar[int | None] = None
     # assign errors to be ignored during main loop
     suppress_errors: typing.ClassVar[
@@ -40,7 +47,7 @@ class Application(ABC):
 
     def __post_init__(self):
         self.screen = Screen(nodelay=self.refresh_rate is not None)
-        curses.curs_set(self.show_cursor)
+        curses.curs_set(_CURSOR_VISIBILITY[self.cursor_visibility])
 
     def __init_subclass__(cls) -> None:
         # infer errors to be suppressed from "public" class variable
