@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from benediction import errors
 from benediction.layout import LayoutKwargs
-from benediction.screen import Screen
+from benediction.screen import CursorVisibility, Screen
 
 ErrorType = typing.Literal["curses", "benediction", "all", "layout", "window"]
 _ERRORS: dict[ErrorType, typing.Type[Exception]] = {
@@ -19,13 +19,6 @@ _ERRORS: dict[ErrorType, typing.Type[Exception]] = {
     "all": Exception,
     "layout": errors.LayoutError,
     "window": errors.WindowError,
-}
-
-CursorVisibility = typing.Literal[typing.Literal["invisible", "normal", "very"]]
-_CURSOR_VISIBILITY: dict[CursorVisibility, int] = {
-    "invisible": 0,
-    "normal": 1,
-    "very": 2,
 }
 
 
@@ -46,8 +39,10 @@ class Application(ABC):
     __debugging = False
 
     def __post_init__(self):
-        self.screen = Screen(nodelay=self.refresh_rate is not None)
-        curses.curs_set(_CURSOR_VISIBILITY[self.cursor_visibility])
+        self.screen = Screen(
+            nodelay=self.refresh_rate is not None,
+            cursor_visibility=self.cursor_visibility,
+        )
 
     def __init_subclass__(cls) -> None:
         # infer errors to be suppressed from "public" class variable

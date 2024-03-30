@@ -6,12 +6,21 @@ from benediction.layout import Layout, LayoutKwargs
 from benediction.style.color._color import reset_colors
 from benediction.window import ScreenWindow
 
+CursorVisibility = typing.Literal[typing.Literal["invisible", "normal", "very"]]
+_CURSOR_VISIBILITY: dict[CursorVisibility, int] = {
+    "invisible": 0,
+    "normal": 1,
+    "very": 2,
+}
+
 
 @dataclass(slots=True)
 class Screen:
     _window: ScreenWindow | None = field(default=None, init=False)
     layouts: list[Layout] = field(default_factory=list, init=False)
+    # screen flags
     nodelay: bool = False
+    cursor_visibility: CursorVisibility = "normal"
 
     def __enter__(self):
         return self._setup()
@@ -66,6 +75,8 @@ class Screen:
             pass
         # nodelay mode
         self.stdscr.nodelay(self.nodelay)
+        # cursor visibility
+        curses.curs_set(_CURSOR_VISIBILITY[self.cursor_visibility])
         # reset global color management state
         reset_colors()
         return self
@@ -78,6 +89,8 @@ class Screen:
         curses.endwin()
         # unset nodelay
         self.stdscr.nodelay(False)
+        # unset cursor option
+        curses.curs_set(_CURSOR_VISIBILITY["normal"])
         # reset global color management state
         reset_colors()
 
