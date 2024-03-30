@@ -587,16 +587,16 @@ class Pad(AbstractWindow):
             )
         return self
 
-    def init(self, *args, **kwargs):
-        # intrinsic pad size only depends on content size
-        self._win = curses.newpad(self.content_height, self.content_width)
+    def init(self, left: int, top: int, width: int, height: int):
+        # we use max values to ensure that the pad does not underflow the normal dimensions
+        self._win = curses.newpad(max(self.content_height, height), max(self.content_width, width))
         # add content
         if self.content is not None:
             for i, line in enumerate(self.content):
                 self._win.addstr(i, 0, line)
         return self
 
-    def resize(self, *args, **kwargs):
+    def resize(self, left: int, top: int, width: int, height: int):
         # pad is "resized" on refresh
         return self
 
