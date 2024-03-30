@@ -26,7 +26,9 @@ _ERRORS: dict[ErrorType, typing.Type[Exception]] = {
 class Application(ABC):
     screen: Screen = field(default_factory=Screen, init=False, repr=False)
     running: bool | None = field(default=None, init=False)
+    # behavior flags
     allow_rerun: typing.ClassVar[bool] = False
+    show_cursor: typing.ClassVar[bool] = False
     refresh_rate: typing.ClassVar[int | None] = None
     # assign errors to be ignored during main loop
     suppress_errors: typing.ClassVar[
@@ -38,6 +40,7 @@ class Application(ABC):
 
     def __post_init__(self):
         self.screen = Screen(nodelay=self.refresh_rate is not None)
+        curses.curs_set(self.show_cursor)
 
     def __init_subclass__(cls) -> None:
         # infer errors to be suppressed from "public" class variable
