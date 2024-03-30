@@ -24,7 +24,7 @@ _ERRORS: dict[ErrorType, typing.Type[Exception]] = {
 
 @dataclass
 class Application(ABC):
-    screen: Screen = field(default_factory=Screen, init=False, repr=False)
+    _screen: Screen | None = field(default=None, init=False, repr=False)
     running: bool | None = field(default=None, init=False)
     # behavior flags
     allow_rerun: typing.ClassVar[bool] = False
@@ -37,12 +37,6 @@ class Application(ABC):
     # internal error handling stuff
     __error_handler: typing.ClassVar[typing.Callable[..., _GeneratorContextManager[None]]]
     __debugging = False
-
-    def __post_init__(self):
-        self.screen = Screen(
-            nodelay=self.refresh_rate is not None,
-            cursor_visibility=self.cursor_visibility,
-        )
 
     def __init_subclass__(cls) -> None:
         # infer errors to be suppressed from "public" class variable
@@ -72,17 +66,31 @@ class Application(ABC):
 
         return super().__init_subclass__()
 
+    @property
+    def screen(self):
+        if not self._screen:
+            raise errors.ScreenError("Cannot access screen before running.")
+        return self._screen
+
     def run(self):
         """Run application."""
         if not (self.allow_rerun or self.running is None):
             raise RuntimeError("Application has already been run.")
         try:
+            # flag running and initialize screen
             self.running = True
+            self._screen = Screen(
+                nodelay=self.refresh_rate is not None,
+                cursor_visibility=self.cursor_visibility,
+            )
+            # run main loop after setup
             with self.screen as _:
                 self.setup()
                 self._main()
         finally:
+            # unset running flag and delete screen
             self.running = False
+            del self._screen
 
     def debug(self):
         """Debug application (ignoring suppression of errors)."""
