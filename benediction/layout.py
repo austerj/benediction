@@ -102,11 +102,11 @@ class LayoutItem(typing.Generic[T], ABC):
         ):
             raise errors.LayoutError(f"Cannot use relative bounds with relative {self._space_name}.")
         elif (
-            # non-negative bounds
-            (self._space_min is not None and self._space_min < 0)
-            or (self._space_max is not None and self._space_max < 0)
+            # bounds between 0 and 1
+            (self._space_min is not None and not (0 < self._space_min < 1))
+            or (self._space_max is not None and not (0 < self._space_max < 1))
         ):
-            raise errors.LayoutError(f"Bounds must be strictly greater than 0.")
+            raise errors.LayoutError(f"Relative bounds must be strictly between 0 and 1.")
         elif (
             # consistent bounds
             self._space_min is not None
