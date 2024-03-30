@@ -152,22 +152,14 @@ class LayoutItem(typing.Generic[T], ABC):
         """Maximum space of item."""
         raise NotImplementedError
 
+    def to_absolute(self, space_unit: int | float, space: int) -> int:
+        """Interpret as absolute units if integer, otherwise as ratio of space."""
+        return space_unit if isinstance(space_unit, int) else int(space_unit * space)
+
     def get_bounds(self, space: int) -> tuple[int | None, int | None]:
         """Tuple of absolute lower- and upper bound."""
-        lower_bound = (
-            None
-            if self._space_min is None
-            else self._space_min
-            if isinstance(self._space_min, int)
-            else int(self._space_min * space)
-        )
-        upper_bound = (
-            None
-            if self._space_max is None
-            else self._space_max
-            if isinstance(self._space_max, int)
-            else int(self._space_max * space)
-        )
+        lower_bound = None if self._space_min is None else self.to_absolute(self._space_min, space)
+        upper_bound = None if self._space_max is None else self.to_absolute(self._space_max, space)
         return (lower_bound, upper_bound)
 
     @property
@@ -247,10 +239,10 @@ class LayoutItem(typing.Generic[T], ABC):
     def _outer_dims(self, left: int, top: int, width: int, height: int):
         """Compute outer left, top, width and height."""
         ml, mt, mr, mb = (
-            self._margin_left if isinstance(self._margin_left, int) else int(self._margin_left * width),
-            self._margin_top if isinstance(self._margin_top, int) else int(self._margin_top * height),
-            self._margin_right if isinstance(self._margin_right, int) else int(self._margin_right * width),
-            self._margin_bottom if isinstance(self._margin_bottom, int) else int(self._margin_bottom * height),
+            self.to_absolute(self._margin_left, width),
+            self.to_absolute(self._margin_top, height),
+            self.to_absolute(self._margin_right, width),
+            self.to_absolute(self._margin_bottom, height),
         )
         if width < ml + mr:
             raise errors.InsufficientSpaceError("Margins cannot exceed window width.")
@@ -262,10 +254,10 @@ class LayoutItem(typing.Generic[T], ABC):
     def _padding(self, width: int, height: int):
         """Compute window padding for left, top, right and bottom."""
         return (
-            self._padding_left if isinstance(self._padding_left, int) else int(self._padding_left * width),
-            self._padding_top if isinstance(self._padding_top, int) else int(self._padding_top * height),
-            self._padding_right if isinstance(self._padding_right, int) else int(self._padding_right * width),
-            self._padding_bottom if isinstance(self._padding_bottom, int) else int(self._padding_bottom * height),
+            self.to_absolute(self._padding_left, width),
+            self.to_absolute(self._padding_top, height),
+            self.to_absolute(self._padding_right, width),
+            self.to_absolute(self._padding_bottom, height),
         )
 
     def _set_dimensions(self, left: int, top: int, width: int, height: int):
