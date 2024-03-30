@@ -29,15 +29,15 @@ def test_implicit_layout():
         #       c0      |      c1     
         #               |             
         # -----------------------------
-        .row(height=r0_h).subd()
+        .row(h=r0_h).subd()
             .col(w()).col(w())
         # r1
         # -----------------------------
         #     c0    | c1 | c2 | c3 | c4
         #           |    |    |    |  
         # -----------------------------
-        .row(height=r1_h).subd()
-            .col(w(), width=r1_c0_w).col(w()).col(w()).col(w()).col(w())
+        .row(h=r1_h).subd()
+            .col(w(), w=r1_c0_w).col(w()).col(w()).col(w()).col(w())
         # r2
         # -----------------------------
         #       c0      |     c1r0    
@@ -80,7 +80,7 @@ def test_implicit_layout():
 def test_insufficient_space():
     layout = Layout()
 
-    layout.row(height=50).subd().col(w(), width=30).col(w())
+    layout.row(h=50).subd().col(w(), w=30).col(w())
 
     # fail: insufficient height
     with pytest.raises(errors.InsufficientSpaceError):
@@ -166,7 +166,7 @@ def test_margins():
 def test_dynamic_floats():
     layout = Layout()
 
-    layout.row(w(), height=0.5).row(w(), height=0.2).row().subd().col(w(), width=0.4).col(w()).col(w())
+    layout.row(w(), h=0.5).row(w(), h=0.2).row().subd().col(w(), w=0.4).col(w()).col(w())
 
     layout.update(0, 0, 100, 100)
     assert check_dimensions(layout[0], 100, 50)
@@ -264,9 +264,9 @@ def test_relative_layout():
 
     # fmt: off
     (layout
-        .row(w(), height=r0_h).subd()
-            .col(w(), width=r0_c0_w).col(w(), mb=r0_c1_mb)
-        .row(w(), height=r1_h, mr=r1_mr)
+        .row(w(), h=r0_h).subd()
+            .col(w(), w=r0_c0_w).col(w(), mb=r0_c1_mb)
+        .row(w(), h=r1_h, mr=r1_mr)
         .row(w())
     )
     # fmt: on
@@ -294,9 +294,9 @@ def test_bounds():
 
     # fmt: off
     (layout
-        .row(w(), height_min=r0_h_min, height_max=r0_h_max)
-        .row(w(), height_min=r1_h_min, height_max=r1_h_max).subd()
-            .col(w(), width_min=r1_c0_w_min, width_max=r1_c0_w_max).col(w(), width=r1_c1_w).col(w())
+        .row(w(), min_h=r0_h_min, max_h=r0_h_max)
+        .row(w(), min_h=r1_h_min, max_h=r1_h_max).subd()
+            .col(w(), min_w=r1_c0_w_min, max_w=r1_c0_w_max).col(w(), w=r1_c1_w).col(w())
         .row(w())
     )
     # fmt: on
