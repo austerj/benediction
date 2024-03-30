@@ -498,6 +498,13 @@ class LayoutItemSubdivider(ABC):
     _row: Row | None
     _col: Column | None
 
+    def end(self):
+        """End subdivision and step back in the layout hierarchy without adding an item."""
+        # short-hand for consistent notation in method chaining when wanting to go back to the
+        # parent level following subdivision of a sub-item; e.g. adding more root columns after
+        # subdividing a row of a root column
+        return self.parent
+
     @abstractmethod
     def col(
         self,
