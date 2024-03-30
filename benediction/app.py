@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import curses
+import time
 import typing
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -26,7 +27,7 @@ class Application(ABC):
     screen: Screen = field(default_factory=Screen, init=False, repr=False)
     running: bool | None = field(default=None, init=False)
     allow_rerun: typing.ClassVar[bool] = False
-    nodelay: typing.ClassVar[bool] = False
+    refresh_rate: typing.ClassVar[int | None] = None
     # assign errors to be ignored during main loop
     suppress_errors: typing.ClassVar[
         typing.Sequence[typing.Type[Exception] | ErrorType] | typing.Type[Exception] | ErrorType | typing.Literal[False]
@@ -36,7 +37,7 @@ class Application(ABC):
     __debugging = False
 
     def __post_init__(self):
-        self.screen = Screen(nodelay=self.nodelay)
+        self.screen = Screen(nodelay=self.refresh_rate is not None)
 
     def __init_subclass__(cls) -> None:
         # infer errors to be suppressed from "public" class variable
@@ -101,6 +102,9 @@ class Application(ABC):
                     self.on_ch(ch)
                 # main loop app refresh
                 self._refresh()
+                # delay next frame according to refresh rate
+                if isinstance(self.refresh_rate, int) and self.refresh_rate > 0:
+                    time.sleep(1 / self.refresh_rate)
 
     def _on_resize(self):
         """Respond to terminal resize event."""
