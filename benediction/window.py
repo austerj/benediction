@@ -266,9 +266,9 @@ class AbstractWindow(ABC):
     def format(
         self,
         from_y: int | VerticalPosition,
-        from_x: int | HorizontalPosition,
+        from_x: int | HorizontalPosition = "left",
         to_y: int | VerticalPosition | None = None,
-        to_x: int | HorizontalPosition | None = None,
+        to_x: int | HorizontalPosition | None = "right",
         y_shift: int = 0,
         x_shift: int = 0,
         to_y_shift: int = 0,
