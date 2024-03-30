@@ -267,8 +267,8 @@ class AbstractWindow(ABC):
         self,
         from_y: int | VerticalPosition,
         from_x: int | HorizontalPosition,
-        to_y: int | VerticalPosition | None,
-        to_x: int | HorizontalPosition | None,
+        to_y: int | VerticalPosition | None = None,
+        to_x: int | HorizontalPosition | None = None,
         y_shift: int = 0,
         x_shift: int = 0,
         to_y_shift: int = 0,
@@ -452,7 +452,7 @@ class AbstractWindow(ABC):
     @staticmethod
     def _infer_overflow_boundary(*xys: int | float | HorizontalPosition | VerticalPosition | None):
         # drop None params
-        xys_ = [xy for xy in xys if xy is not None]
+        xys_ = (xy for xy in xys if xy is not None)
         return (
             # assume outer boundary if all values are ints or any explicit outer coordinate
             "outer"
