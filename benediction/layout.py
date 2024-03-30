@@ -97,6 +97,10 @@ class LayoutItem(typing.Generic[T], ABC):
         if isinstance(self._space, int):
             if not (self._space_min is None and self._space_max is None):
                 raise errors.LayoutError(f"Cannot use bounds with absolute (integer) {self._space_name}.")
+        elif isinstance(self._space, float) and (
+            isinstance(self._space_min, float) or isinstance(self._space_min, float)
+        ):
+            raise errors.LayoutError(f"Cannot use relative bounds with relative {self._space_name}.")
         elif (
             # non-negative bounds
             (self._space_min is not None and self._space_min < 0)
@@ -107,6 +111,8 @@ class LayoutItem(typing.Generic[T], ABC):
             # consistent bounds
             self._space_min is not None
             and self._space_max is not None
+            # can only compare preemptively if both are int or float - otherwise wait for solver
+            and type(self._space_min) == type(self._space_max)
             and self._space_min >= self._space_max
         ):
             raise errors.LayoutError(f"Lower bound must be strictly less than upper bound.")
@@ -137,19 +143,32 @@ class LayoutItem(typing.Generic[T], ABC):
         raise NotImplementedError
 
     @abstractproperty
-    def _space_min(self) -> int | None:
+    def _space_min(self) -> int | float | None:
         """Minimum space of item."""
         raise NotImplementedError
 
     @abstractproperty
-    def _space_max(self) -> int | None:
+    def _space_max(self) -> int | float | None:
         """Maximum space of item."""
         raise NotImplementedError
 
-    @property
-    def bounds(self):
-        """Tuple of lower- and upper bound."""
-        return (self._space_min, self._space_max)
+    def get_bounds(self, space: int) -> tuple[int | None, int | None]:
+        """Tuple of absolute lower- and upper bound."""
+        lower_bound = (
+            None
+            if self._space_min is None
+            else self._space_min
+            if isinstance(self._space_min, int)
+            else int(self._space_min * space)
+        )
+        upper_bound = (
+            None
+            if self._space_max is None
+            else self._space_max
+            if isinstance(self._space_max, int)
+            else int(self._space_max * space)
+        )
+        return (lower_bound, upper_bound)
 
     @property
     def window(self):
@@ -179,8 +198,8 @@ class LayoutItem(typing.Generic[T], ABC):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
-        width_min: int | None = None,
-        width_max: int | None = None,
+        width_min: int | float | None = None,
+        width_max: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new column with fixed or dynamic height."""
@@ -191,24 +210,25 @@ class LayoutItem(typing.Generic[T], ABC):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
-        height_min: int | None = None,
-        height_max: int | None = None,
+        height_min: int | float | None = None,
+        height_max: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new row with fixed or dynamic height."""
         raise NotImplementedError
 
-    def _clip(self, space: int) -> int:
+    def _clip(self, item_space: int, space: int) -> int:
         """Clip to item boundaries."""
+        lb, ub = self.get_bounds(space)
         return (
             # lower bound if above
-            self._space_min
-            if self._space_min is not None and space < self._space_min
+            lb
+            if lb is not None and item_space < lb
             # upper bound if below
-            else self._space_max
-            if self._space_max is not None and space > self._space_max
+            else ub
+            if ub is not None and item_space > ub
             # else return arg
-            else space
+            else item_space
         )
 
     @abstractmethod
@@ -276,8 +296,8 @@ class LayoutItem(typing.Generic[T], ABC):
                 # absolute is simple - no bounds, always equals assigned value
                 item_space = item._space
             else:
-                # relative may have (absolute) bounds
-                item_space = item._clip(int(item._space * space))
+                # relative may have bounds
+                item_space = item._clip(int(item._space * space), space)
             # store in dict to retain mapping to original order
             idx_to_space[idx] = item_space
             allocated_space += item_space
@@ -287,7 +307,7 @@ class LayoutItem(typing.Generic[T], ABC):
 
         # allocate implicit elements based on remaining space
         if implicit_items:
-            bounds = tuple(item[1].bounds for item in implicit_items)
+            bounds = tuple(item[1].get_bounds(space) for item in implicit_items)
             remaining_space = space - allocated_space
 
             # update solver if bounds have changed
@@ -313,8 +333,8 @@ class Column(LayoutItem["Row"]):
     _parent: Row | Layout
     rows: list[Row] = field(default_factory=list, init=False)
     width: int | float | None  # None or float for dynamic allocation of available space
-    width_min: int | None = None
-    width_max: int | None = None
+    width_min: int | float | None = None
+    width_max: int | float | None = None
     _space_name = "width"
 
     def update(self, left: int, top: int, width: int, height: int):
@@ -335,8 +355,8 @@ class Column(LayoutItem["Row"]):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
-        width_min: int | None = None,
-        width_max: int | None = None,
+        width_min: int | float | None = None,
+        width_max: int | float | None = None,
         **kwargs,
     ):
         if isinstance(self._parent, Layout):
@@ -347,8 +367,8 @@ class Column(LayoutItem["Row"]):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
-        height_min: int | None = None,
-        height_max: int | None = None,
+        height_min: int | float | None = None,
+        height_max: int | float | None = None,
         **kwargs,
     ):
         new_row = Row(self, window, height, height_min, height_max, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
@@ -397,8 +417,8 @@ class Row(LayoutItem["Column"]):
     _parent: Column | Layout
     cols: list[Column] = field(default_factory=list, init=False)
     height: int | float | None  # None or float for dynamic allocation of available space
-    height_min: int | None = field(default=None)
-    height_max: int | None = field(default=None)
+    height_min: int | float | None = field(default=None)
+    height_max: int | float | None = field(default=None)
     _space_name = "height"
 
     def update(self, left: int, top: int, width: int, height: int):
@@ -419,8 +439,8 @@ class Row(LayoutItem["Column"]):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
-        height_min: int | None = None,
-        height_max: int | None = None,
+        height_min: int | float | None = None,
+        height_max: int | float | None = None,
         **kwargs,
     ):
         return self._parent.row(window, height, height_min, height_max, **kwargs)
@@ -429,8 +449,8 @@ class Row(LayoutItem["Column"]):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
-        width_min: int | None = None,
-        width_max: int | None = None,
+        width_min: int | float | None = None,
+        width_max: int | float | None = None,
         **kwargs,
     ):
         new_col = Column(self, window, width, width_min, width_max, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
@@ -483,8 +503,8 @@ class LayoutItemSubdivider(ABC):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
-        width_min: int | None = None,
-        width_max: int | None = None,
+        width_min: int | float | None = None,
+        width_max: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new column with fixed or dynamic width."""
@@ -495,8 +515,8 @@ class LayoutItemSubdivider(ABC):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
-        height_min: int | None = None,
-        height_max: int | None = None,
+        height_min: int | float | None = None,
+        height_max: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new row with fixed or dynamic height."""
@@ -517,8 +537,8 @@ class RowSubdivider(LayoutItemSubdivider):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
-        width_min: int | None = None,
-        width_max: int | None = None,
+        width_min: int | float | None = None,
+        width_max: int | float | None = None,
         **kwargs,
     ):
         new_col = self._row.col(window, width, width_min, width_max, **kwargs)
@@ -529,8 +549,8 @@ class RowSubdivider(LayoutItemSubdivider):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
-        height_min: int | None = None,
-        height_max: int | None = None,
+        height_min: int | float | None = None,
+        height_max: int | float | None = None,
         **kwargs,
     ):
         return self.parent.row(window, height, height_min, height_max, **kwargs)
@@ -552,8 +572,8 @@ class ColumnSubdivider(LayoutItemSubdivider):
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
-        width_min: int | None = None,
-        width_max: int | None = None,
+        width_min: int | float | None = None,
+        width_max: int | float | None = None,
         **kwargs,
     ):
         return self.parent.col(window, width, width_min, width_max, **kwargs)
@@ -562,8 +582,8 @@ class ColumnSubdivider(LayoutItemSubdivider):
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
-        height_min: int | None = None,
-        height_max: int | None = None,
+        height_min: int | float | None = None,
+        height_max: int | float | None = None,
         **kwargs,
     ):
         new_row = self._col.row(window, height, height_min, height_max, **kwargs)
@@ -595,8 +615,8 @@ class Layout:
         self,
         window: AbstractWindow | None = None,
         height: int | float | None = None,
-        height_min: int | None = None,
-        height_max: int | None = None,
+        height_min: int | float | None = None,
+        height_max: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Subdivide layout into rows via chained methods."""
@@ -610,8 +630,8 @@ class Layout:
         self,
         window: AbstractWindow | None = None,
         width: int | float | None = None,
-        width_min: int | None = None,
-        width_max: int | None = None,
+        width_min: int | float | None = None,
+        width_max: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Subdivide layout into columns via chained methods."""
