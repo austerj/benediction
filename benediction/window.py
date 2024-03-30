@@ -263,14 +263,19 @@ class AbstractWindow(ABC):
             raise errors.WindowNotInitializedError("Window must be initialized before being accessed.")
         return self._win
 
-    def get_attr(self, style: Style | None = None, attr: int | None = None, **kwargs: typing.Unpack[StyleKwargs]):
+    def get_attr(
+        self,
+        style: Style | typing.Literal["default"] | None = None,
+        attr: int | None = None,
+        **kwargs: typing.Unpack[StyleKwargs],
+    ):
         """Handle prioritization of style-related arguments and return integer representation of style."""
         if attr is not None:
             if kwargs or style:
                 raise ValueError("Cannot use explicit 'attr' together with style arguments.")
             return attr
         # default to window style if no explicit object was provided
-        style = self.style if style is None else style
+        style = self.style if style is None else Style.default if style == "default" else style
         # return mutated attr if kwargs were provided
         if kwargs:
             return style.derive(**kwargs).attr
@@ -289,7 +294,7 @@ class AbstractWindow(ABC):
         to_x_shift: int = 0,
         clip_overflow_y: OverflowBoundary | typing.Literal[False] | None = None,
         clip_overflow_x: OverflowBoundary | typing.Literal[False] | None = None,
-        style: Style | None = None,
+        style: Style | typing.Literal["default"] | None = None,
         attr: int | None = None,
         **style_kwargs: typing.Unpack[StyleKwargs],
     ):
@@ -336,7 +341,7 @@ class AbstractWindow(ABC):
         wrap: typing.Literal["simple", "textwrap", False] | None = None,
         wrap_width: int | None = None,
         textwrap_kwargs: TextWrapKwargs = {},
-        style: Style | None = None,
+        style: Style | typing.Literal["default"] | None = None,
         attr: int | None = None,
         **style_kwargs: typing.Unpack[StyleKwargs],
     ):
