@@ -71,49 +71,49 @@ class AbstractWindow(ABC):
 
     _win: "curses._CursesWindow | None" = field(default=None, init=False, repr=False)
     # attributes set on update
-    __width: int | None = field(default=None, init=False, repr=False)
-    __height: int | None = field(default=None, init=False, repr=False)
-    __left: int | None = field(default=None, init=False, repr=False)
-    __top: int | None = field(default=None, init=False, repr=False)
-    __padding_left: int = field(default=0, init=False, repr=False)
-    __padding_top: int = field(default=0, init=False, repr=False)
-    __padding_right: int = field(default=0, init=False, repr=False)
-    __padding_bottom: int = field(default=0, init=False, repr=False)
+    _width: int | None = field(default=None, init=False, repr=False)
+    _height: int | None = field(default=None, init=False, repr=False)
+    _left: int | None = field(default=None, init=False, repr=False)
+    _top: int | None = field(default=None, init=False, repr=False)
+    _padding_left: int = field(default=0, init=False, repr=False)
+    _padding_top: int = field(default=0, init=False, repr=False)
+    _padding_right: int = field(default=0, init=False, repr=False)
+    _padding_bottom: int = field(default=0, init=False, repr=False)
     # styles
-    __style: Style = field(default=Style.default, init=False, repr=False)
+    _style: Style = field(default=Style.default, init=False, repr=False)
 
     # dimensions
     @property
     def width_outer(self):
         """Width of outer window (ignoring padding)."""
-        if self.__width is None:
+        if self._width is None:
             raise ValueError("Width must be set before being accessed.")
-        return self.__width
+        return self._width
 
     @property
     def height_outer(self):
         """Height of outer window (ignoring padding)."""
-        if self.__height is None:
+        if self._height is None:
             raise ValueError("Height must be set before being accessed.")
-        return self.__height
+        return self._height
 
     @property
     def width(self):
         """Width of inner window (with padding)."""
-        return self.width_outer - (self.__padding_left + self.__padding_right)
+        return self.width_outer - (self._padding_left + self._padding_right)
 
     @property
     def height(self):
         """Height of inner window (with padding)."""
-        return self.height_outer - (self.__padding_top + self.__padding_bottom)
+        return self.height_outer - (self._padding_top + self._padding_bottom)
 
     # absolute positions
     @property
     def top_abs(self):
         """Top of window (y-coordinate, absolute)."""
-        if self.__top is None:
+        if self._top is None:
             raise ValueError("Vertical offset must be set before being accessed.")
-        return self.__top
+        return self._top
 
     @property
     def middle_abs(self):
@@ -128,9 +128,9 @@ class AbstractWindow(ABC):
     @property
     def left_abs(self):
         """Left of window (x-coordinate, absolute)."""
-        if self.__left is None:
+        if self._left is None:
             raise ValueError("Horizontal offset must be set before being accessed.")
-        return self.__left
+        return self._left
 
     @property
     def center_abs(self):
@@ -177,7 +177,7 @@ class AbstractWindow(ABC):
     @property
     def top(self):
         """Top of window (y-coordinate, relative padded)."""
-        return self.__padding_top
+        return self._padding_top
 
     @property
     def middle(self):
@@ -192,7 +192,7 @@ class AbstractWindow(ABC):
     @property
     def left(self):
         """Left of window (x-coordinate, relative padded)."""
-        return self.__padding_left
+        return self._padding_left
 
     @property
     def center(self):
@@ -216,15 +216,15 @@ class AbstractWindow(ABC):
         padding_bottom: int = 0,
     ):
         # set dimensional attributes
-        self.__left = left
-        self.__top = top
-        self.__width = width
-        self.__height = height
+        self._left = left
+        self._top = top
+        self._width = width
+        self._height = height
         # set padding
-        self.__padding_left = padding_left
-        self.__padding_top = padding_top
-        self.__padding_right = padding_right
-        self.__padding_bottom = padding_bottom
+        self._padding_left = padding_left
+        self._padding_top = padding_top
+        self._padding_right = padding_right
+        self._padding_bottom = padding_bottom
         # init / resize window or silently fail on error (e.g. screen overflow)
         try:
             if not self._win:
@@ -237,7 +237,7 @@ class AbstractWindow(ABC):
 
     def set_style(self, style: Style):
         """Assign new Style to window."""
-        self.__style = style
+        self._style = style
         self.apply_style()
         return self
 
@@ -255,7 +255,7 @@ class AbstractWindow(ABC):
 
     @property
     def style(self):
-        return self.__style
+        return self._style
 
     @property
     def win(self):
@@ -571,7 +571,15 @@ class Pad(AbstractWindow):
 
     def noutrefresh(self):
         if self._win:
-            self._win.noutrefresh(self.top_shift, self.left_shift, self.top, self.left, self.bottom, self.right)
+            # using absolute values since pad coordinates are relative to screen
+            self._win.noutrefresh(
+                self.top_shift,
+                self.left_shift,
+                self.top_abs + self._padding_top,
+                self.left_abs + self._padding_left,
+                self.bottom_abs - self._padding_bottom,
+                self.right_abs - self._padding_right,
+            )
         return self
 
     def init(self, *args, **kwargs):
