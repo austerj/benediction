@@ -255,8 +255,8 @@ class AbstractWindow(ABC):
         style = self.style if style is None else style
         if self.ready:
             self.win.bkgd(style.win_ch, style.win_attr)
-            if (inner_fg := style.default_inner_fg) is not None or (inner_bg := style.default_inner_bg) is not None:
-                self.format("top", "left", "bottom", "right", fg=inner_fg, bg=inner_bg)
+            if style.default_inner_fg is not None or style.default_inner_bg is not None:
+                self.format("top", "left", "bottom", "right", fg=style.default_inner_fg, bg=style.default_inner_bg)
 
     @property
     def style(self):
