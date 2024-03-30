@@ -98,13 +98,13 @@ class LayoutItem(typing.Generic[T], ABC):
             if not (self._space_min is None and self._space_max is None):
                 raise errors.LayoutError(f"Cannot use bounds with absolute (integer) {self._space_name}.")
         elif isinstance(self._space, float) and (
-            isinstance(self._space_min, float) or isinstance(self._space_min, float)
+            isinstance(self._space_min, float) or isinstance(self._space_max, float)
         ):
             raise errors.LayoutError(f"Cannot use relative bounds with relative {self._space_name}.")
         elif (
             # bounds between 0 and 1
-            (self._space_min is not None and not (0 < self._space_min < 1))
-            or (self._space_max is not None and not (0 < self._space_max < 1))
+            (isinstance(self._space_min, float) and self._space_min is not None and not (0 < self._space_min < 1))
+            or (isinstance(self._space_max, float) and self._space_max is not None and not (0 < self._space_max < 1))
         ):
             raise errors.LayoutError(f"Relative bounds must be strictly between 0 and 1.")
         elif (
