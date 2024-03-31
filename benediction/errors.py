@@ -10,6 +10,10 @@ class LayoutError(BenedictionError):
     ...
 
 
+class FrameError(LayoutError):
+    ...
+
+
 class InsufficientSpaceError(LayoutError):
     ...
 
