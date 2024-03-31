@@ -56,12 +56,12 @@ class Screen:
 
     def new_layout(
         self,
-        space_y: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_y: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Return a new layout managed by the screen."""
-        layout = Layout(self.window, space_y, space_x, **kwargs)
+        layout = Layout(self.window, gap_y, gap_x, **kwargs)
         self.layouts.append(layout)
         return layout
 

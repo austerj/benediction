@@ -198,7 +198,7 @@ class LayoutItem(typing.Generic[T], ABC):
         w: int | float | None = None,
         min_w: int | float | None = None,
         max_w: int | float | None = None,
-        space_y: int | float | None = None,
+        gap_y: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new column with fixed or dynamic height."""
@@ -211,7 +211,7 @@ class LayoutItem(typing.Generic[T], ABC):
         h: int | float | None = None,
         min_h: int | float | None = None,
         max_h: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new row with fixed or dynamic height."""
@@ -341,7 +341,7 @@ class Column(LayoutItem["Row"]):
     width: int | float | None = None  # None or float for dynamic allocation of available space
     width_min: int | float | None = None
     width_max: int | float | None = None
-    space_y: int | float | None = None
+    gap_y: int | float | None = None
     _space_name = "width"
 
     def update(self, left: int, top: int, width: int, height: int):
@@ -365,12 +365,12 @@ class Column(LayoutItem["Row"]):
         w: int | float | None = None,
         min_w: int | float | None = None,
         max_w: int | float | None = None,
-        space_y: int | float | None = None,
+        gap_y: int | float | None = None,
         **kwargs,
     ):
         if isinstance(self._parent, Layout):
             raise TypeError("Cannot add columns to root layout.")
-        return self._parent.col(window, w, min_w, max_w, space_y, **kwargs)
+        return self._parent.col(window, w, min_w, max_w, gap_y, **kwargs)
 
     def row(
         self,
@@ -378,10 +378,10 @@ class Column(LayoutItem["Row"]):
         h: int | float | None = None,
         min_h: int | float | None = None,
         max_h: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs,
     ):
-        new_row = Row(self, window, h, min_h, max_h, space_x, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
+        new_row = Row(self, window, h, min_h, max_h, gap_x, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
         self.rows.append(new_row)
         return new_row
 
@@ -409,7 +409,7 @@ class Column(LayoutItem["Row"]):
 
     @property
     def _space_between(self):
-        return self.space_y
+        return self.gap_y
 
     @property
     def height(self):
@@ -433,7 +433,7 @@ class Row(LayoutItem["Column"]):
     height: int | float | None = None  # None or float for dynamic allocation of available space
     height_min: int | float | None = None
     height_max: int | float | None = None
-    space_x: int | float | None = None
+    gap_x: int | float | None = None
     _space_name = "height"
 
     def update(self, left: int, top: int, width: int, height: int):
@@ -457,10 +457,10 @@ class Row(LayoutItem["Column"]):
         h: int | float | None = None,
         min_h: int | float | None = None,
         max_h: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs,
     ):
-        return self._parent.row(window, h, min_h, max_h, space_x, **kwargs)
+        return self._parent.row(window, h, min_h, max_h, gap_x, **kwargs)
 
     def col(
         self,
@@ -468,10 +468,10 @@ class Row(LayoutItem["Column"]):
         w: int | float | None = None,
         min_w: int | float | None = None,
         max_w: int | float | None = None,
-        space_y: int | float | None = None,
+        gap_y: int | float | None = None,
         **kwargs,
     ):
-        new_col = Column(self, window, w, min_w, max_w, space_y, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
+        new_col = Column(self, window, w, min_w, max_w, gap_y, **_map_kwargs(style=kwargs.pop("style", self._style), **kwargs))  # type: ignore
         self.cols.append(new_col)
         return new_col
 
@@ -499,7 +499,7 @@ class Row(LayoutItem["Column"]):
 
     @property
     def _space_between(self):
-        return self.space_x
+        return self.gap_x
 
     @property
     def width(self):
@@ -534,7 +534,7 @@ class LayoutItemSubdivider(ABC):
         w: int | float | None = None,
         min_w: int | float | None = None,
         max_w: int | float | None = None,
-        space_y: int | float | None = None,
+        gap_y: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new column with fixed or dynamic width."""
@@ -547,7 +547,7 @@ class LayoutItemSubdivider(ABC):
         h: int | float | None = None,
         min_h: int | float | None = None,
         max_h: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Add new row with fixed or dynamic height."""
@@ -570,10 +570,10 @@ class RowSubdivider(LayoutItemSubdivider):
         w: int | float | None = None,
         min_w: int | float | None = None,
         max_w: int | float | None = None,
-        space_y: int | float | None = None,
+        gap_y: int | float | None = None,
         **kwargs,
     ):
-        new_col = self._row.col(window, w, min_w, max_w, space_y, **kwargs)
+        new_col = self._row.col(window, w, min_w, max_w, gap_y, **kwargs)
         self._col = new_col
         return self
 
@@ -583,10 +583,10 @@ class RowSubdivider(LayoutItemSubdivider):
         h: int | float | None = None,
         min_h: int | float | None = None,
         max_h: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs,
     ):
-        return self.parent.row(window, h, min_h, max_h, space_x, **kwargs)
+        return self.parent.row(window, h, min_h, max_h, gap_x, **kwargs)
 
     def subd(self):
         """Subdivide column into rows via chained methods."""
@@ -607,10 +607,10 @@ class ColumnSubdivider(LayoutItemSubdivider):
         w: int | float | None = None,
         min_w: int | float | None = None,
         max_w: int | float | None = None,
-        space_y: int | float | None = None,
+        gap_y: int | float | None = None,
         **kwargs,
     ):
-        return self.parent.col(window, w, min_w, max_w, space_y, **kwargs)
+        return self.parent.col(window, w, min_w, max_w, gap_y, **kwargs)
 
     def row(
         self,
@@ -618,10 +618,10 @@ class ColumnSubdivider(LayoutItemSubdivider):
         h: int | float | None = None,
         min_h: int | float | None = None,
         max_h: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs,
     ):
-        new_row = self._col.row(window, h, min_h, max_h, space_x, **kwargs)
+        new_row = self._col.row(window, h, min_h, max_h, gap_x, **kwargs)
         self._row = new_row
         return self
 
@@ -638,16 +638,16 @@ class Layout:
     def __init__(
         self,
         __root_window: AbstractWindow | None = None,
-        space_y: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_y: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         self.__root = None
         self.__root_window = __root_window
         self.kwargs = kwargs
         # inner gaps
-        self.space_y = space_y
-        self.space_x = space_x
+        self.gap_y = gap_y
+        self.gap_x = gap_x
         # dimensions
         self.__height = None
         self.__width = None
@@ -661,15 +661,15 @@ class Layout:
         h: int | float | None = None,
         min_h: int | float | None = None,
         max_h: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Subdivide layout into rows via chained methods."""
         if self.__root is None:
-            self.__root = Column(self, self.__root_window, space_y=self.space_y, **_map_kwargs(**self.kwargs))
+            self.__root = Column(self, self.__root_window, gap_y=self.gap_y, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Row):
             raise errors.LayoutError("Cannot add row to row-major layout.")
-        return self.root.row(window, h, min_h, max_h, space_x, **kwargs)
+        return self.root.row(window, h, min_h, max_h, gap_x, **kwargs)
 
     def col(
         self,
@@ -677,15 +677,15 @@ class Layout:
         w: int | float | None = None,
         min_w: int | float | None = None,
         max_w: int | float | None = None,
-        space_y: int | float | None = None,
+        gap_y: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Subdivide layout into columns via chained methods."""
         if self.__root is None:
-            self.__root = Row(self, self.__root_window, space_x=self.space_x, **_map_kwargs(**self.kwargs))
+            self.__root = Row(self, self.__root_window, gap_x=self.gap_x, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Column):
             raise errors.LayoutError("Cannot add column to column-major layout.")
-        return self.__root.col(window, w, min_w, max_w, space_y, **kwargs)
+        return self.__root.col(window, w, min_w, max_w, gap_y, **kwargs)
 
     def update(self, left: int, top: int, width: int, height: int):
         """Update rows and columns of layout."""

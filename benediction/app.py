@@ -136,12 +136,12 @@ class Application(ABC):
 
     def new_layout(
         self,
-        space_y: int | float | None = None,
-        space_x: int | float | None = None,
+        gap_y: int | float | None = None,
+        gap_x: int | float | None = None,
         **kwargs: typing.Unpack[LayoutKwargs],
     ):
         """Return a new layout managed by the application screen."""
-        return self.screen.new_layout(space_y, space_x, **kwargs)
+        return self.screen.new_layout(gap_y, gap_x, **kwargs)
 
     def exit(self):
         """Break out from main loop."""
