@@ -89,9 +89,9 @@ class Frame:
             raise errors.FrameError(f"Invalid {width=}: must be strictly positive")
         # validate padding
         elif padding_top + padding_bottom >= height:
-            raise errors.FrameError(f"Invalid vertical padding: must be greater than height")
+            raise errors.FrameError(f"Invalid vertical padding: must be strictly less than height")
         elif padding_left + padding_right >= width:
-            raise errors.FrameError(f"Invalid horizontal padding: must be greater than width")
+            raise errors.FrameError(f"Invalid horizontal padding: must be strictly less than width")
         # set outer dimensional attributes
         self.__top = top
         self.__left = left
