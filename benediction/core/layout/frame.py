@@ -310,7 +310,7 @@ class Frame:
 
 @dataclass(frozen=True, slots=True, repr=False)
 class ConstrainedFrame:
-    """Container object holding a Frame along with attributes and constraints pertaining to it."""
+    """Container object holding a Frame along with constraints and relevant methods."""
 
     # inner frame
     frame: Frame = field(default_factory=Frame, init=False)
@@ -334,22 +334,21 @@ class ConstrainedFrame:
 
     def __post_init__(self):
         for attr in ("width", "height"):
-            x, x_min, x_max = (getattr(self, a) for a in [attr, f"{attr}_min", f"{attr}_max"])
             x: int | float | None
             x_min: int | float | None
             x_max: int | float | None
+            x, x_min, x_max = (getattr(self, a) for a in [attr, f"{attr}_min", f"{attr}_max"])
             # validate non-negativity
             if x is not None and x <= 0:
                 raise errors.FrameConstraintError(f"Cannot use non-strictly positive {attr}.")
             if (x_min is not None and x_min <= 0) or (x_max is not None and x_max <= 0):
                 raise errors.FrameConstraintError(f"Cannot use non-strictly positive bounds.")
             # validate bound types
-            if isinstance(x, int):
-                if not (x_min is None and x_max is None):
-                    raise errors.FrameConstraintError(f"Cannot use bounds with absolute (integer) {attr}.")
+            if isinstance(x, int) and not (x_min is None and x_max is None):
+                raise errors.FrameConstraintError(f"Cannot use bounds with absolute (integer) {attr}.")
             elif isinstance(x, float) and (isinstance(x_min, float) or isinstance(x_max, float)):
                 raise errors.FrameConstraintError(f"Cannot use relative bounds with relative (float) {attr}.")
-            # validate bound values
+            # validate consistency of bounds
             if (isinstance(x_min, float) and x_min > 1) or (isinstance(x_max, float) and x_max > 1):
                 raise errors.FrameConstraintError(f"Relative bounds must be strictly between 0 and 1.")
             elif x_min is not None and x_max is not None and type(x_max) == type(x_max) and x_min >= x_max:
@@ -380,3 +379,83 @@ class ConstrainedFrame:
             if ((value := getattr(self, attr)) is not None and value != 0)
         ]
         return f"{self.__class__.__name__}({', '.join(attrs)})"
+
+    @typing.overload
+    @staticmethod
+    def abs(units: int | float, outer_space: int) -> int:
+        ...
+
+    @typing.overload
+    @staticmethod
+    def abs(units: None, outer_space: int) -> None:
+        ...
+
+    @staticmethod
+    def abs(units: int | float | None, outer_space: int):
+        """Interpret as absolute units if integer, otherwise as rounded-down ratio of space."""
+        return int(units * outer_space) if isinstance(units, float) else units
+
+    def height_bounds(self, outer_height: int) -> tuple[int | None, int | None]:
+        """Get height bounds for outer height."""
+        return self.abs(self.height_min, outer_height), self.abs(self.height_max, outer_height)
+
+    def width_bounds(self, outer_width: int) -> tuple[int | None, int | None]:
+        """Get width bounds for outer width."""
+        return self.abs(self.width_min, outer_width), self.abs(self.width_max, outer_width)
+
+    def margins(self, outer_height: int, outer_width: int):
+        """Get (top, bottom, left, right)-margins for outer height and width."""
+        return (
+            self.abs(self.margin_top, outer_height),
+            self.abs(self.margin_bottom, outer_height),
+            self.abs(self.margin_left, outer_width),
+            self.abs(self.margin_right, outer_width),
+        )
+
+    def dimensions(self, top: int, left: int, height: int, width: int, outer_height: int, outer_width: int):
+        """Get post-margined (top, left, height, width)-dimensions for outer height and width."""
+        mt, mb, ml, mr = self.margins(outer_height, outer_width)
+        return top + mt, left + ml, height - (mt + mb), width - (ml + mr)
+
+    def padding(self, outer_height: int, outer_width: int):
+        """Get (top, bottom, left, right)-padding for outer height and width."""
+        return (
+            self.abs(self.padding_top, outer_height),
+            self.abs(self.padding_bottom, outer_height),
+            self.abs(self.padding_left, outer_width),
+            self.abs(self.padding_right, outer_width),
+        )
+
+    def set_dimensions(
+        self,
+        top: int,
+        left: int,
+        height: int,
+        width: int,
+        outer_height: int,
+        outer_width: int,
+    ):
+        """Assign dimensions to inner Frame."""
+        if not self.height is None and height != self.abs(self.height, outer_height):
+            cons = "absolute" if isinstance(self.height, int) else "relative"
+            raise errors.FrameConstraintError(f"Height violates exact ({cons}) height constraint.")
+        if not self.width is None and width != self.abs(self.width, outer_width):
+            cons = "absolute" if isinstance(self.height, int) else "relative"
+            raise errors.FrameConstraintError(f"Width violates exact ({cons}) width constraint.")
+        # validate against min/max constraints
+        h_min, h_max = self.height_bounds(outer_height)
+        w_min, w_max = self.width_bounds(outer_width)
+        if h_min is not None and height < h_min:
+            raise errors.FrameConstraintError("Height violates lower bound.")
+        if h_max is not None and height > h_max:
+            raise errors.FrameConstraintError("Height violates upper bound.")
+        if w_min is not None and width < w_min:
+            raise errors.FrameConstraintError("Width violates lower bound.")
+        if w_max is not None and width > w_max:
+            raise errors.FrameConstraintError("Width violates upper bound.")
+        # let Frame validate dimensions
+        self.frame.set_dimensions(
+            *self.dimensions(top, left, height, width, outer_height, outer_width),
+            *self.padding(outer_height, outer_width),
+        )
+        return self
