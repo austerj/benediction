@@ -134,9 +134,14 @@ class Application(ABC):
         self.update()
         self.screen.noutrefresh()
 
-    def new_layout(self, **kwargs: typing.Unpack[LayoutKwargs]):
+    def new_layout(
+        self,
+        space_y: int | float | None = None,
+        space_x: int | float | None = None,
+        **kwargs: typing.Unpack[LayoutKwargs],
+    ):
         """Return a new layout managed by the application screen."""
-        return self.screen.new_layout(**kwargs)
+        return self.screen.new_layout(space_y, space_x, **kwargs)
 
     def exit(self):
         """Break out from main loop."""

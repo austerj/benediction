@@ -276,6 +276,10 @@ class LayoutItem(typing.Generic[T], ABC):
                 raise errors.InsufficientSpaceError("Padding cannot exceed window height.")
             self._window.set_dimensions(left, top, width, height, pl, pt, pr, pb)
 
+    def _gap(self, space: int):
+        """Get gap to add between items."""
+        return 0 if self._space_between is None else self.to_absolute(self._space_between, space)
+
     def _allocate_space(self, space: int):
         """Compute allocated space for each item and return iterator of item-space pairs."""
         items = self._items
@@ -283,6 +287,10 @@ class LayoutItem(typing.Generic[T], ABC):
 
         allocated_space = 0
         implicit_items: list[tuple[int, LayoutItem]] = []
+
+        # subtract gaps from space - "added back" via shifts to positions in Row / Column update()
+        gap = self._gap(space)
+        space -= gap * max(len(items) - 1, 0)
 
         # allocate absolute and relative items
         for idx, item in enumerate(items):
@@ -330,7 +338,7 @@ class Column(LayoutItem["Row"]):
 
     _parent: Row | Layout
     rows: list[Row] = field(default_factory=list, init=False)
-    width: int | float | None  # None or float for dynamic allocation of available space
+    width: int | float | None = None  # None or float for dynamic allocation of available space
     width_min: int | float | None = None
     width_max: int | float | None = None
     space_y: int | float | None = None
@@ -346,9 +354,10 @@ class Column(LayoutItem["Row"]):
 
         # allocate height from top to bottom
         top_ = top
+        gap = self._gap(width)
         for row, row_height in self._allocate_space(height):
             row.update(left, top_, width, row_height)
-            top_ += row_height
+            top_ += row_height + gap
 
     def col(
         self,
@@ -421,10 +430,10 @@ class Row(LayoutItem["Column"]):
 
     _parent: Column | Layout
     cols: list[Column] = field(default_factory=list, init=False)
-    height: int | float | None  # None or float for dynamic allocation of available space
-    height_min: int | float | None = field(default=None)
-    height_max: int | float | None = field(default=None)
-    space_x: int | float | None = field(default=None)
+    height: int | float | None = None  # None or float for dynamic allocation of available space
+    height_min: int | float | None = None
+    height_max: int | float | None = None
+    space_x: int | float | None = None
     _space_name = "height"
 
     def update(self, left: int, top: int, width: int, height: int):
@@ -437,9 +446,10 @@ class Row(LayoutItem["Column"]):
 
         # allocate width from left to right
         left_ = left
+        gap = self._gap(width)
         for col, col_width in self._allocate_space(width):
             col.update(left_, top, col_width, height)
-            left_ += col_width
+            left_ += col_width + gap
 
     def row(
         self,
@@ -625,10 +635,19 @@ class ColumnSubdivider(LayoutItemSubdivider):
 class Layout:
     """Partition screen into a responsive layout of nested rows and columns."""
 
-    def __init__(self, __root_window: AbstractWindow | None = None, **kwargs: typing.Unpack[LayoutKwargs]):
+    def __init__(
+        self,
+        __root_window: AbstractWindow | None = None,
+        space_y: int | float | None = None,
+        space_x: int | float | None = None,
+        **kwargs: typing.Unpack[LayoutKwargs],
+    ):
         self.__root = None
         self.__root_window = __root_window
         self.kwargs = kwargs
+        # inner gaps
+        self.space_y = space_y
+        self.space_x = space_x
         # dimensions
         self.__height = None
         self.__width = None
@@ -647,7 +666,7 @@ class Layout:
     ):
         """Subdivide layout into rows via chained methods."""
         if self.__root is None:
-            self.__root = Column(self, self.__root_window, None, **_map_kwargs(**self.kwargs))
+            self.__root = Column(self, self.__root_window, space_y=self.space_y, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Row):
             raise errors.LayoutError("Cannot add row to row-major layout.")
         return self.root.row(window, h, min_h, max_h, space_x, **kwargs)
@@ -663,7 +682,7 @@ class Layout:
     ):
         """Subdivide layout into columns via chained methods."""
         if self.__root is None:
-            self.__root = Row(self, self.__root_window, None, **_map_kwargs(**self.kwargs))
+            self.__root = Row(self, self.__root_window, space_x=self.space_x, **_map_kwargs(**self.kwargs))
         elif isinstance(self.__root, Column):
             raise errors.LayoutError("Cannot add column to column-major layout.")
         return self.__root.col(window, w, min_w, max_w, space_y, **kwargs)

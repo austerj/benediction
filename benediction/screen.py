@@ -54,9 +54,14 @@ class Screen:
         for layout in self.layouts:
             layout.update(0, 0, width, height)
 
-    def new_layout(self, **kwargs: typing.Unpack[LayoutKwargs]):
+    def new_layout(
+        self,
+        space_y: int | float | None = None,
+        space_x: int | float | None = None,
+        **kwargs: typing.Unpack[LayoutKwargs],
+    ):
         """Return a new layout managed by the screen."""
-        layout = Layout(self.window, **kwargs)
+        layout = Layout(self.window, space_y, space_x, **kwargs)
         self.layouts.append(layout)
         return layout
 
