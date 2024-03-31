@@ -1,23 +1,23 @@
 import pytest
 
 from benediction import errors
-from benediction.core.layout import Frame
+from benediction.core.layout.frame import Frame
 
-l, t, w, h = 2, 5, 20, 50
-pl, pt, pr, pb = 1, 2, 2, 1
+t, l, h, w = 5, 2, 50, 20
+pt, pb, pl, pr = 2, 2, 1, 1
 
 
 @pytest.fixture
 def dims():
     return {
-        "left": l,
         "top": t,
-        "width": w,
+        "left": l,
         "height": h,
-        "padding_left": pl,
+        "width": w,
         "padding_top": pt,
-        "padding_right": pr,
         "padding_bottom": pb,
+        "padding_left": pl,
+        "padding_right": pr,
     }
 
 

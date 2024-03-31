@@ -48,17 +48,17 @@ _YTOPROP: dict[VerticalPosition, str] = {key: key.replace("-", "_") for key in _
 
 @dataclass(slots=True, repr=False)
 class Frame:
-    """A class with assigned dimensions and methods for controlling positioning within those."""
+    """Representation of a fixed region of space with associated methods for positioning."""
 
-    # dimensions assigned on on set_dimensions call
-    _top: int | None = field(default=None, init=False)
-    _left: int | None = field(default=None, init=False)
-    _height: int | None = field(default=None, init=False)
-    _width: int | None = field(default=None, init=False)
-    _padding_top: int = field(default=0, init=False)
-    _padding_left: int = field(default=0, init=False)
-    _padding_bottom: int = field(default=0, init=False)
-    _padding_right: int = field(default=0, init=False)
+    # attributes assigned on set_dimensions call
+    __top: int | None = field(default=None, init=False)
+    __left: int | None = field(default=None, init=False)
+    __height: int | None = field(default=None, init=False)
+    __width: int | None = field(default=None, init=False)
+    __padding_top: int = field(default=0, init=False)
+    __padding_bottom: int = field(default=0, init=False)
+    __padding_left: int = field(default=0, init=False)
+    __padding_right: int = field(default=0, init=False)
 
     def __repr__(self):
         if self.is_ready:
@@ -70,8 +70,8 @@ class Frame:
         self,
         top: int,
         left: int,
-        width: int,
         height: int,
+        width: int,
         padding_top: int = 0,
         padding_bottom: int = 0,
         padding_left: int = 0,
@@ -83,63 +83,63 @@ class Frame:
             raise errors.FrameError(f"Invalid {top=}: must be strictly positive")
         elif left <= 0:
             raise errors.FrameError(f"Invalid {left=}: must be strictly positive")
-        elif width <= 0:
-            raise errors.FrameError(f"Invalid {width=}: must be strictly positive")
         elif height <= 0:
             raise errors.FrameError(f"Invalid {height=}: must be strictly positive")
+        elif width <= 0:
+            raise errors.FrameError(f"Invalid {width=}: must be strictly positive")
         # validate padding
         elif padding_top + padding_bottom >= height:
             raise errors.FrameError(f"Invalid vertical padding: must be greater than height")
         elif padding_left + padding_right >= width:
             raise errors.FrameError(f"Invalid horizontal padding: must be greater than width")
         # set outer dimensional attributes
-        self._left = left
-        self._top = top
-        self._width = width
-        self._height = height
+        self.__top = top
+        self.__left = left
+        self.__height = height
+        self.__width = width
         # set padding
-        self._padding_left = padding_left
-        self._padding_top = padding_top
-        self._padding_right = padding_right
-        self._padding_bottom = padding_bottom
+        self.__padding_top = padding_top
+        self.__padding_bottom = padding_bottom
+        self.__padding_left = padding_left
+        self.__padding_right = padding_right
 
     @property
     def is_ready(self) -> bool:
         """Flag denoting if dimensions have been assigned."""
-        return self._width is not None
+        return self.__width is not None
 
     # dimensions
     @property
-    def width_outer(self) -> int:
-        """Width of outer region (ignoring padding)."""
-        if self._width is None:
-            raise errors.FrameError("Width must be assigned with 'set_dimensions' before being accessed.")
-        return self._width
-
-    @property
     def height_outer(self) -> int:
         """Height of outer region (ignoring padding)."""
-        if self._height is None:
+        if self.__height is None:
             raise errors.FrameError("Height must be assigned with 'set_dimensions' before being accessed.")
-        return self._height
+        return self.__height
 
     @property
-    def width(self) -> int:
-        """Width of inner region (with padding)."""
-        return self.width_outer - (self._padding_left + self._padding_right)
+    def width_outer(self) -> int:
+        """Width of outer region (ignoring padding)."""
+        if self.__width is None:
+            raise errors.FrameError("Width must be assigned with 'set_dimensions' before being accessed.")
+        return self.__width
 
     @property
     def height(self) -> int:
         """Height of inner region (with padding)."""
-        return self.height_outer - (self._padding_top + self._padding_bottom)
+        return self.height_outer - (self.__padding_top + self.__padding_bottom)
+
+    @property
+    def width(self) -> int:
+        """Width of inner region (with padding)."""
+        return self.width_outer - (self.__padding_left + self.__padding_right)
 
     # absolute positions
     @property
     def top_abs(self) -> int:
         """Top (y-coordinate, absolute)."""
-        if self._top is None:
+        if self.__top is None:
             raise errors.FrameError("Vertical offset must be set before being accessed.")
-        return self._top
+        return self.__top
 
     @property
     def middle_abs(self) -> int:
@@ -154,9 +154,9 @@ class Frame:
     @property
     def left_abs(self) -> int:
         """Left (x-coordinate, absolute)."""
-        if self._left is None:
+        if self.__left is None:
             raise errors.FrameError("Horizontal offset must be set before being accessed.")
-        return self._left
+        return self.__left
 
     @property
     def center_abs(self) -> int:
@@ -203,7 +203,7 @@ class Frame:
     @property
     def top(self) -> int:
         """Top (y-coordinate, relative padded)."""
-        return self._padding_top
+        return self.__padding_top
 
     @property
     def middle(self) -> int:
@@ -218,7 +218,7 @@ class Frame:
     @property
     def left(self) -> int:
         """Left (x-coordinate, relative padded)."""
-        return self._padding_left
+        return self.__padding_left
 
     @property
     def center(self) -> int:
