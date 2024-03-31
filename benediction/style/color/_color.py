@@ -24,12 +24,12 @@ class Color(int):
     @property
     def fg(self) -> ColorPair:
         """Return color as foreground paired with default background."""
-        return ColorPair_(self, Color_.default)
+        return ColorPairFactory(self, ColorFactory.default)
 
     @property
     def bg(self) -> ColorPair:
         """Return color as background paired with default foreground."""
-        return ColorPair_(Color_.default, self)
+        return ColorPairFactory(ColorFactory.default, self)
 
 
 @dataclass(frozen=True)
@@ -42,8 +42,8 @@ class ColorPair(int):
         return super().__new__(cls, 0 if number <= 0 else curses.color_pair(number % curses.COLOR_PAIRS + 1))
 
 
-# exposed color classes that internally manages uniqueness
-class Color_:
+# exposed color factories that internally manages uniqueness
+class ColorFactory:
     __colors: dict[RGB, Color] = {}
     default: Color
     number = 0
@@ -91,7 +91,7 @@ class Color_:
         return cls(*rgb)  # type: ignore
 
 
-class ColorPair_:
+class ColorPairFactory:
     __pairs: dict[tuple[Color, Color], ColorPair] = {}
     default: ColorPair = ColorPair(0, None, None)  # type: ignore
     number: int = 0
@@ -99,9 +99,9 @@ class ColorPair_:
     def __new__(cls, foreground: Color | RGB, background: Color | RGB):
         # retrieve colors
         if isinstance(foreground, tuple):
-            foreground = Color_(*foreground)
+            foreground = ColorFactory(*foreground)
         if isinstance(background, tuple):
-            background = Color_(*background)
+            background = ColorFactory(*background)
         # NOTE: need to start pair number from 1 due to 0 being reserved for white-on-black
         pair_key = (foreground, background)
         # add new pair (or reinitialize it if pair has been replaced)
@@ -117,6 +117,6 @@ class ColorPair_:
 
 def reset_colors():
     """Reset the global state of all color management."""
-    ColorPair_._ColorPair__pairs = {}  # type: ignore
-    Color_._Color__colors = {}  # type: ignore
-    Color_._Color__using_default_colors = False  # type: ignore
+    ColorPairFactory._ColorPairFactory__pairs = {}  # type: ignore
+    ColorFactory._ColorFactory__colors = {}  # type: ignore
+    ColorFactory._ColorFactory__using_default_colors = False  # type: ignore

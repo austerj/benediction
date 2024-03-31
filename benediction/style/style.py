@@ -5,7 +5,7 @@ import typing
 from dataclasses import dataclass, field, replace
 
 from benediction.style.color import tailwind
-from benediction.style.color._color import RGB, Color, Color_, ColorPair_
+from benediction.style.color._color import RGB, Color, ColorFactory, ColorPairFactory
 
 Attribute = typing.Literal[
     "alternate_character_set",
@@ -194,7 +194,7 @@ class Style:
     @property
     def attr(self) -> int:
         if self.fg is not None and self.bg is not None:
-            return ColorPair_(self.fg, self.bg) | self._flag_attr
+            return ColorPairFactory(self.fg, self.bg) | self._flag_attr
         elif self.fg is not None and self.bg is None:
             return self.fg.fg | self._flag_attr
         elif self.bg is not None and self.fg is None:
@@ -205,7 +205,7 @@ class Style:
     @property
     def win_attr(self) -> int:
         if self.win_fg is not None and self.win_bg is not None:
-            return ColorPair_(self.win_fg, self.win_bg) | self._win_flag_attr
+            return ColorPairFactory(self.win_fg, self.win_bg) | self._win_flag_attr
         elif self.win_fg is not None and self.win_bg is None:
             return self.win_fg.fg | self._win_flag_attr
         elif self.win_bg is not None and self.win_fg is None:
@@ -223,9 +223,9 @@ class Style:
             for key in ("fg", "bg", "inner_fg", "inner_bg", "win_fg", "win_bg"):
                 color = kwargs.get(key)
                 if isinstance(color, str):
-                    kwargs[key] = Color_.tw(color)  # type: ignore
+                    kwargs[key] = ColorFactory.tw(color)  # type: ignore
                 elif isinstance(color, tuple):
-                    kwargs[key] = Color_(*color)
+                    kwargs[key] = ColorFactory(*color)
         return replace(self, **_default_to_parent(self, **kwargs))
 
 
