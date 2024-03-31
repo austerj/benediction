@@ -306,3 +306,77 @@ class Frame:
             return not all((self.left <= self.x(x) <= self.right) for x in xs)
         else:
             return not all((self.left_outer <= self.x(x) <= self.right_outer) for x in xs)
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class ConstrainedFrame:
+    """Container object holding a Frame along with attributes and constraints pertaining to it."""
+
+    # inner frame
+    frame: Frame = field(default_factory=Frame, init=False)
+    # height / width
+    height: int | float | None = field(default=None, kw_only=True)
+    height_min: int | float | None = field(default=None, kw_only=True)
+    height_max: int | float | None = field(default=None, kw_only=True)
+    width: int | float | None = field(default=None, kw_only=True)
+    width_min: int | float | None = field(default=None, kw_only=True)
+    width_max: int | float | None = field(default=None, kw_only=True)
+    # margins
+    margin_top: int | float = field(default=0, kw_only=True)
+    margin_bottom: int | float = field(default=0, kw_only=True)
+    margin_left: int | float = field(default=0, kw_only=True)
+    margin_right: int | float = field(default=0, kw_only=True)
+    # padding
+    padding_top: int | float = field(default=0, kw_only=True)
+    padding_bottom: int | float = field(default=0, kw_only=True)
+    padding_left: int | float = field(default=0, kw_only=True)
+    padding_right: int | float = field(default=0, kw_only=True)
+
+    def __post_init__(self):
+        for attr in ("width", "height"):
+            x, x_min, x_max = (getattr(self, a) for a in [attr, f"{attr}_min", f"{attr}_max"])
+            x: int | float | None
+            x_min: int | float | None
+            x_max: int | float | None
+            # validate non-negativity
+            if x is not None and x <= 0:
+                raise errors.FrameConstraintError(f"Cannot use non-strictly positive {attr}.")
+            if (x_min is not None and x_min <= 0) or (x_max is not None and x_max <= 0):
+                raise errors.FrameConstraintError(f"Cannot use non-strictly positive bounds.")
+            # validate bound types
+            if isinstance(x, int):
+                if not (x_min is None and x_max is None):
+                    raise errors.FrameConstraintError(f"Cannot use bounds with absolute (integer) {attr}.")
+            elif isinstance(x, float) and (isinstance(x_min, float) or isinstance(x_max, float)):
+                raise errors.FrameConstraintError(f"Cannot use relative bounds with relative (float) {attr}.")
+            # validate bound values
+            if (isinstance(x_min, float) and x_min > 1) or (isinstance(x_max, float) and x_max > 1):
+                raise errors.FrameConstraintError(f"Relative bounds must be strictly between 0 and 1.")
+            elif x_min is not None and x_max is not None and type(x_max) == type(x_max) and x_min >= x_max:
+                raise errors.FrameConstraintError(f"Lower bound must be strictly less than upper bound.")
+
+    def __repr__(self):
+        attrs = [
+            f"{alias}={f'{100 * value:.0f}%' if isinstance(value, float) else value}"
+            for alias, attr in [
+                # height / width
+                ("h", "height"),
+                ("min_h", "height_min"),
+                ("max_h", "height_max"),
+                ("w", "width"),
+                ("min_w", "width_min"),
+                ("max_w", "width_max"),
+                # margins
+                ("mt", "margin_top"),
+                ("mb", "margin_bottom"),
+                ("ml", "margin_left"),
+                ("mr", "margin_right"),
+                # padding
+                ("pt", "padding_top"),
+                ("pb", "padding_bottom"),
+                ("pl", "padding_left"),
+                ("pr", "padding_right"),
+            ]
+            if ((value := getattr(self, attr)) is not None and value != 0)
+        ]
+        return f"{self.__class__.__name__}({', '.join(attrs)})"

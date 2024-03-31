@@ -14,6 +14,10 @@ class FrameError(LayoutError):
     ...
 
 
+class FrameConstraintError(FrameError):
+    ...
+
+
 class InsufficientSpaceError(LayoutError):
     ...
 
