@@ -48,7 +48,7 @@ _YTOPROP: dict[VerticalPosition, str] = {key: key.replace("-", "_") for key in _
 
 @dataclass(slots=True, repr=False)
 class Frame:
-    """A class with assigned static dimensions and methods for positioning within those."""
+    """A class with assigned dimensions and methods for controlling positioning within those."""
 
     # dimensions assigned on on set_dimensions call
     _top: int | None = field(default=None, init=False)
@@ -77,7 +77,7 @@ class Frame:
         padding_left: int = 0,
         padding_right: int = 0,
     ):
-        """Assign static dimensions to Frame."""
+        """Assign static dimensions."""
         # validate outer dimensions
         if top <= 0:
             raise errors.FrameError(f"Invalid {top=}: must be strictly positive")
@@ -111,26 +111,26 @@ class Frame:
     # dimensions
     @property
     def width_outer(self) -> int:
-        """Width of outer Frame (ignoring padding)."""
+        """Width of outer region (ignoring padding)."""
         if self._width is None:
             raise errors.FrameError("Width must be assigned with 'set_dimensions' before being accessed.")
         return self._width
 
     @property
     def height_outer(self) -> int:
-        """Height of outer Frame (ignoring padding)."""
+        """Height of outer region (ignoring padding)."""
         if self._height is None:
             raise errors.FrameError("Height must be assigned with 'set_dimensions' before being accessed.")
         return self._height
 
     @property
     def width(self) -> int:
-        """Width of inner Frame (with padding)."""
+        """Width of inner region (with padding)."""
         return self.width_outer - (self._padding_left + self._padding_right)
 
     @property
     def height(self) -> int:
-        """Height of inner Frame (with padding)."""
+        """Height of inner region (with padding)."""
         return self.height_outer - (self._padding_top + self._padding_bottom)
 
     # absolute positions
