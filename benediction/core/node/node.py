@@ -7,7 +7,7 @@ from dataclasses import InitVar, dataclass, field
 from benediction import errors
 from benediction.core.frame import ConstrainedFrame
 from benediction.core.node.spec import NodeSpec, NodeSpecKwargs
-from benediction.style.style import Style
+from benediction.style.style import Style, WindowStyleKwargs
 
 
 @dataclass(slots=True, repr=False)
@@ -54,14 +54,13 @@ class Node(ABC):
         """Inner Frame associated with Node."""
         return self.cframe.frame
 
-    # TODO: delete cache of self + all child nodes on update_style / update_spec calls
     @property
     def style(self):
         """Style object associated with Node."""
         # NOTE: caching allows for inheriting at access time and protects us against exponential
         # growth in recursively inheriting from parent Nodes (at the cost of dealing with
         # invalidation when styles change)
-        if self.__cached_style is not None:
+        if getattr(self, "_Node__cached_style", None) is not None:
             return self.__cached_style
         # construct Style from spec if not found in cache
         base_style = self.parent.style if self.parent is not None else None
@@ -69,6 +68,14 @@ class Node(ABC):
         # cache derived Style and return
         self.__cached_style = derived_style
         return derived_style
+
+    def update_style(self, **kwargs: typing.Unpack[WindowStyleKwargs]):
+        """Update Style and invalidate cached child styles."""
+        # update style kwargs in spec
+        self.spec = self.spec.update_style(**kwargs)
+        # invalidate all cached styles (that may have derived from replaced Style)
+        self.apply(lambda node: delattr(node, "_Node__cached_style"))
+        return self
 
     def append(self, node: Node):
         """Append a new child Node."""

@@ -41,3 +41,8 @@ def test_style_inheritance(styled_nodes):
     assert not styled_nodes[0][0].style.italic and not styled_nodes[0][0].style.bold
     # second row inherits both bold and italic flag
     assert styled_nodes[0][1].style.italic and styled_nodes[0][1].style.bold
+
+    # updating spec triggers invalidation of child caches
+    styled_nodes.update_style(italic=False, blink=True)
+    assert not styled_nodes.style.italic and styled_nodes.style.blink
+    assert not styled_nodes[0].style.italic and styled_nodes[0].style.blink and styled_nodes[0].style.bold

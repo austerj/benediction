@@ -1,5 +1,5 @@
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from benediction.style.style import Style, WindowStyleKwargs
 
@@ -170,6 +170,17 @@ class NodeSpec:
             style=(Style.default if style == "default" else style),
             style_kwargs=style_kwargs,
         )
+
+    def update_style(
+        self,
+        style: Style | typing.Literal["default", "existing"] | None = "existing",
+        **style_kwargs: typing.Unpack[WindowStyleKwargs],
+    ):
+        """Return new NodeSpec with replaced Style options."""
+        # cannot use None as default arg since it is used to represent inheriting from parent
+        style = self.style if style == "existing" else style
+        derived_kwargs = {k: (getattr(self.style_kwargs, k) if v is None else v) for k, v in style_kwargs.items()}
+        return replace(self, style=style, style_kwargs=derived_kwargs)
 
     def derive_style(self, base_style: Style | None = None):
         """Derive Style object from NodeSpec and a base Style (if not overwritten)."""
