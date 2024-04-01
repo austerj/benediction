@@ -6,7 +6,8 @@ from benediction.core.node import Node
 
 # wrapper to pass kwargs as dict to LayoutNode constructor
 def LayoutNode(children: list[Node] = [], is_row: bool = True, **kwargs: typing.Unpack[_layout.LayoutNodeKwargs]):
-    return _layout.LayoutNode(children, is_row=is_row, kwargs=kwargs)
+    spec = _layout.LayoutNodeSpec.from_kwargs(**kwargs)
+    return _layout.LayoutNode(children, is_row=is_row, spec=spec)
 
 
 # wrappers for LayoutNode constructor with initial row / column config and appropriate kwarg hints
