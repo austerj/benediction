@@ -11,7 +11,7 @@ def nodes():
 
 @pytest.fixture
 def styled_nodes():
-    root = Row([Column([Row(style="default"), Row()], bold=True), Column()], italic=True)
+    root = Row([Column([Row(base_style="default"), Row()], bold=True), Column()], italic=True)
     return root
 
 

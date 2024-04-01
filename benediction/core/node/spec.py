@@ -8,7 +8,7 @@ from benediction.style.style import Style, WindowStyleKwargs
 class StyleKwargs(WindowStyleKwargs):
     """Keys related to Node styling."""
 
-    style: typing.NotRequired[Style | typing.Literal["default"]]
+    base_style: typing.NotRequired[Style | typing.Literal["default"]]
 
 
 class MarginKwargs(typing.TypedDict):
@@ -85,7 +85,7 @@ class NodeSpec:
     """Attributes related to Node styling and spacing constraints."""
 
     # style
-    style: Style | typing.Literal["default"] | None  # explicit style to derive from - inherits from Parent if None
+    base_style: Style | typing.Literal["default", "parent"]  # style to derive from
     style_kwargs: WindowStyleKwargs
     # height
     height: int | float | None
@@ -141,7 +141,7 @@ class NodeSpec:
         pl: int | float | None = None,
         pr: int | float | None = None,
         # style
-        style: Style | typing.Literal["default"] | None = None,
+        base_style: Style | typing.Literal["default", "parent"] = "parent",
         **style_kwargs: typing.Unpack[WindowStyleKwargs],
     ):
         return cls(
@@ -167,25 +167,21 @@ class NodeSpec:
             padding_left=pl if pl is not None else px if px is not None else p if p is not None else 0,
             padding_right=pr if pr is not None else px if px is not None else p if p is not None else 0,
             # style
-            style=(Style.default if style == "default" else style),
+            base_style=base_style,
             style_kwargs=style_kwargs,
         )
 
     def update_style(
         self,
-        style: Style | typing.Literal["default", "existing"] | None = "existing",
+        base_style: Style | typing.Literal["default", "parent"] | None = None,
         **style_kwargs: typing.Unpack[WindowStyleKwargs],
     ):
         """Return new NodeSpec with replaced Style options."""
-        # cannot use None as default arg since it is used to represent inheriting from parent
-        style = self.style if style == "existing" else style
+        base_style = self.base_style if base_style is None else base_style
         derived_kwargs = {k: (getattr(self.style_kwargs, k) if v is None else v) for k, v in style_kwargs.items()}
-        return replace(self, style=style, style_kwargs=derived_kwargs)
+        return replace(self, base_style=base_style, style_kwargs=derived_kwargs)
 
-    def derive_style(self, base_style: Style | None = None):
-        """Derive Style object from NodeSpec and a base Style (if not overwritten)."""
-        if self.style is not None:
-            base_style = Style.default if self.style == "default" else self.style
-        else:
-            base_style = base_style if base_style is not None else Style.default
+    def derive_style(self, parent_style: Style | None = None):
+        """Derive Style object from NodeSpec."""
+        base_style = Style.default if (self.base_style == "default" or parent_style is None) else parent_style
         return base_style.derive(**self.style_kwargs)

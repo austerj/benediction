@@ -63,8 +63,8 @@ class Node(ABC):
         if getattr(self, "_Node__cached_style", None) is not None:
             return self.__cached_style
         # construct Style from spec if not found in cache
-        base_style = self.parent.style if self.parent is not None else None
-        derived_style = self.spec.derive_style(base_style)
+        parent_style = self.parent.style if self.parent is not None else None
+        derived_style = self.spec.derive_style(parent_style)
         # cache derived Style and return
         self.__cached_style = derived_style
         return derived_style
