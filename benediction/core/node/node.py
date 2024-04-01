@@ -31,8 +31,9 @@ class Node(ABC):
         self.spec = NodeSpec.from_kwargs(**spec_kwargs)
         self.cframe = ConstrainedFrame.from_spec(self.spec)
 
-        # TODO (?): .move(old_parent, new_parent) that removes node from list in old parent
         for node in self.children:
+            if node.parent is not None:
+                node.parent.children.remove(node)
             node.parent = self
 
     def __repr__(self):

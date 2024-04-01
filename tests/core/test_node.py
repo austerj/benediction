@@ -119,3 +119,15 @@ def test_update_frame(sized_nodes):
     unsized_nodes.update_frame(0, 0, 10, 5)
     assert unsized_nodes.frame.height == 10
     assert unsized_nodes.frame.width == 5
+
+
+def test_parent_removal(sized_nodes):
+    # child is in original node
+    old_parent = sized_nodes
+    child = old_parent[0]
+    assert child in old_parent
+
+    # moving a node to another parent removes it from the original
+    new_parent = ContainerNode([child])
+    assert child in new_parent
+    assert child not in old_parent
