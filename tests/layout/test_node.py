@@ -1,39 +1,39 @@
 import pytest
 
-from benediction.core.layout.node import Node
+from benediction.core.layout.node import ContainerNode
 
 
 @pytest.fixture
 def nodes():
     # depth 0
-    root = Node()
+    root = ContainerNode()
     # depth 1
-    node_0 = Node(root)
-    node_1 = Node(root)
+    node_0 = ContainerNode(root)
+    node_1 = ContainerNode(root)
     # depth 2
-    node_0_0 = Node(node_0)
-    node_0_1 = Node(node_0)
-    node_0_2 = Node(node_0)
-    node_1_0 = Node(node_1)
-    node_1_1 = Node(node_1)
+    node_0_0 = ContainerNode(node_0)
+    node_0_1 = ContainerNode(node_0)
+    node_0_2 = ContainerNode(node_0)
+    node_1_0 = ContainerNode(node_1)
+    node_1_1 = ContainerNode(node_1)
     # depth 3
-    node_1_1_0 = Node(node_1_1)
-    node_1_1_1 = Node(node_1_1)
+    node_1_1_0 = ContainerNode(node_1_1)
+    node_1_1_1 = ContainerNode(node_1_1)
     return root
 
 
 @pytest.fixture
 def sized_nodes():
     # depth 0
-    root = Node()
+    root = ContainerNode()
     # depth 1
-    node_0 = Node(root)
+    node_0 = ContainerNode(root)
     node_0.cframe.frame.set_dimensions(6, 1, 7, 7)
     # depth 2
-    node_0_0 = Node(node_0)
+    node_0_0 = ContainerNode(node_0)
     node_0_0.cframe.frame.set_dimensions(1, 2, 5, 5)
-    node_0_1 = Node(node_0)
-    node_0_2 = Node(node_0)
+    node_0_1 = ContainerNode(node_0)
+    node_0_2 = ContainerNode(node_0)
     node_0_2.cframe.frame.set_dimensions(12, 7, 2, 2)
     return root
 

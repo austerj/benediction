@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import typing
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from benediction import errors
 from benediction.core.layout.frame import ConstrainedFrame
 
 
 @dataclass(slots=True, repr=False)
-class Node:
+class Node(ABC):
     """Object that forms part of a hierarchy of relations to parent and child Nodes."""
 
     # relational nodes
@@ -45,6 +47,24 @@ class Node:
         self.apply(lambda node: nodes.append(node), depth, include_self)
         return nodes
 
+    @abstractmethod
+    def update_frame(
+        self,
+        top: int | None = None,
+        left: int | None = None,
+        width: int | None = None,
+        height: int | None = None,
+        *args,
+        **kwargs,
+    ):
+        """Update the Frame dimensions of the Node."""
+        raise NotImplementedError
+
+
+@dataclass(slots=True, repr=False)
+class ContainerNode(Node):
+    """Node object with dimensions dictated by its children."""
+
     def update_frame(
         self,
         top: int | None = None,
@@ -53,9 +73,9 @@ class Node:
         height: int | None = None,
     ):
         """Update frame to the smallest region that contains the given dimensions and all child nodes."""
-        # NOTE: default behavior of the base node is a bottoms-up approach - basically, assume the
-        # child nodes have dealt with their frames explicitly and infer the boundary from them,
-        # ignoring all constraints (since we are not working relative to an outer frame)
+        # NOTE: this is a bottoms-up approach - basically, assume the child nodes have dealt with
+        # their frames explicitly and infer the boundary from them, ignoring all constraints (since
+        # we are not working relative to an outer frame)
         right, bottom = None, None
 
         def update_boundaries(node: Node):
@@ -77,4 +97,4 @@ class Node:
             # update inner frame directly (ignoring constraints)
             self.cframe.frame.set_dimensions(top, left, height, width)  # type: ignore
         else:
-            raise ValueError("WAAH")
+            raise errors.NodeFrameError("Could not infer container dimensions.")

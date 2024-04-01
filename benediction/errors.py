@@ -26,6 +26,15 @@ class UnboundWindowError(LayoutError):
     ...
 
 
+# errors raised by / related to nodes
+class NodeError(BenedictionError):
+    ...
+
+
+class NodeFrameError(NodeError, FrameError):
+    ...
+
+
 # errors raised by / related to windows
 class WindowError(BenedictionError):
     ...

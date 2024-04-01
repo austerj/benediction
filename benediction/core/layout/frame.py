@@ -402,7 +402,7 @@ class ConstrainedFrame:
     def width_bounds(self, outer_width: int) -> tuple[int | None, int | None]:
         """Get width bounds for outer width."""
         return self.abs(self.width_min, outer_width), self.abs(self.width_max, outer_width)
-    
+
     def margins(self, outer_height: int, outer_width: int):
         """Get (top, bottom, left, right)-margins for outer height and width."""
         return (
