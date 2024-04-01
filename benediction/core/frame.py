@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from benediction import errors
 
 if typing.TYPE_CHECKING:
-    from benediction.core.spec import NodeSpec
+    from benediction.core.node.spec import NodeSpec
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
