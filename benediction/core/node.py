@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import typing
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 
 from benediction import errors
 from benediction.core.frame import ConstrainedFrame
+from benediction.core.layout.spec import NodeSpec, NodeSpecKwargs
 
 
 @dataclass(slots=True, repr=False)
@@ -15,10 +16,14 @@ class Node(ABC):
     # relational nodes
     parent: Node | None = field(default=None, init=False)
     children: list[Node] = field(default_factory=list)
+    # NodeSpec governing constraints on frames and allocation of space to child Nodes
+    spec: NodeSpec = field(init=False, repr=False)
+    spec_kwargs: InitVar[NodeSpecKwargs] = field(kw_only=True)
     # constrained frame
     cframe: ConstrainedFrame = field(default_factory=ConstrainedFrame, init=False)
 
-    def __post_init__(self):
+    def __post_init__(self, spec_kwargs: NodeSpecKwargs):
+        self.spec = NodeSpec.from_kwargs(**spec_kwargs)
         # TODO (?): .move(old_parent, new_parent) that removes node from list in old parent
         for node in self.children:
             node.parent = self
