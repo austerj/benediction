@@ -1,8 +1,8 @@
 import typing
 
 import benediction.core.layout.layout as _layout
-from benediction.core.layout.spec import ColumnSpecKwargs, NodeSpecKwargs, RowSpecKwargs
 from benediction.core.node import Node
+from benediction.core.spec import ColumnSpecKwargs, NodeSpecKwargs, RowSpecKwargs
 
 
 # wrapper to pass kwargs as dict to LayoutNode constructor

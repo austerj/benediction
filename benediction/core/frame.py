@@ -5,6 +5,9 @@ from dataclasses import dataclass, field
 
 from benediction import errors
 
+if typing.TYPE_CHECKING:
+    from benediction.core.spec import NodeSpec
+
 OverflowBoundary = typing.Literal["inner", "outer"]
 
 # map width / height to shift in position
@@ -459,3 +462,25 @@ class ConstrainedFrame:
             *self.padding(outer_height, outer_width),
         )
         return self
+
+    @classmethod
+    def from_spec(cls, spec: NodeSpec):
+        return cls(
+            # height / width
+            height=spec.height,
+            height_min=spec.height_min,
+            height_max=spec.height_max,
+            width=spec.width,
+            width_min=spec.width_min,
+            width_max=spec.width_max,
+            # margins
+            margin_top=spec.margin_top,
+            margin_bottom=spec.margin_bottom,
+            margin_left=spec.margin_left,
+            margin_right=spec.margin_right,
+            # padding
+            padding_top=spec.padding_top,
+            padding_bottom=spec.padding_bottom,
+            padding_left=spec.padding_left,
+            padding_right=spec.padding_right,
+        )

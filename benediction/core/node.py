@@ -6,7 +6,7 @@ from dataclasses import InitVar, dataclass, field
 
 from benediction import errors
 from benediction.core.frame import ConstrainedFrame
-from benediction.core.layout.spec import NodeSpec, NodeSpecKwargs
+from benediction.core.spec import NodeSpec, NodeSpecKwargs
 
 
 @dataclass(slots=True, repr=False)
@@ -18,12 +18,13 @@ class Node(ABC):
     children: list[Node] = field(default_factory=list)
     # NodeSpec governing constraints on frames and allocation of space to child Nodes
     spec: NodeSpec = field(init=False, repr=False)
-    spec_kwargs: InitVar[NodeSpecKwargs] = field(kw_only=True)
+    spec_kwargs: InitVar[NodeSpecKwargs | None] = field(default=None, kw_only=True)
     # constrained frame
-    cframe: ConstrainedFrame = field(default_factory=ConstrainedFrame, init=False)
+    cframe: ConstrainedFrame = field(init=False, repr=False)
 
-    def __post_init__(self, spec_kwargs: NodeSpecKwargs):
-        self.spec = NodeSpec.from_kwargs(**spec_kwargs)
+    def __post_init__(self, spec_kwargs: NodeSpecKwargs | None):
+        self.spec = NodeSpec.from_kwargs(**spec_kwargs) if spec_kwargs else NodeSpec.default
+        self.cframe = ConstrainedFrame.from_spec(self.spec)
         # TODO (?): .move(old_parent, new_parent) that removes node from list in old parent
         for node in self.children:
             node.parent = self
