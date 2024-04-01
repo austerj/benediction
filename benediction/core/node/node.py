@@ -7,6 +7,7 @@ from dataclasses import InitVar, dataclass, field
 from benediction import errors
 from benediction.core.frame import ConstrainedFrame
 from benediction.core.node.spec import NodeSpec, NodeSpecKwargs
+from benediction.style.style import Style
 
 
 @dataclass(slots=True, repr=False)
@@ -17,18 +18,16 @@ class Node(ABC):
     parent: Node | None = field(default=None, init=False)
     children: list[Node] = field(default_factory=list)
     # NodeSpec governing styling, constraints on frames and allocation of space to child Nodes
-    spec: NodeSpec = field(init=False, repr=False)
+    spec: NodeSpec = field(init=False)
     spec_kwargs: InitVar[NodeSpecKwargs | None] = field(default=None, kw_only=True)
     # constrained frame
     cframe: ConstrainedFrame = field(init=False, repr=False)
+    # caching style to get inheritance at access-time + avoid recursively deriving Styles
+    __cached_style: Style | None = field(default=None, init=False)
 
     def __post_init__(self, spec_kwargs: NodeSpecKwargs | None):
-        # get style from parent if not explicitly overwritten by kwargs, else use (empty) default
-        spec_kwargs = {} if spec_kwargs is None else spec_kwargs
-        if not "style" in spec_kwargs:
-            spec_kwargs["style"] = self.parent.style if self.parent is not None else "default"
-
         # set spec and frame
+        spec_kwargs = {} if spec_kwargs is None else spec_kwargs
         self.spec = NodeSpec.from_kwargs(**spec_kwargs)
         self.cframe = ConstrainedFrame.from_spec(self.spec)
 
@@ -55,10 +54,21 @@ class Node(ABC):
         """Inner Frame associated with Node."""
         return self.cframe.frame
 
+    # TODO: delete cache of self + all child nodes on update_style / update_spec calls
     @property
     def style(self):
         """Style object associated with Node."""
-        return self.spec.style
+        # NOTE: caching allows for inheriting at access time and protects us against exponential
+        # growth in recursively inheriting from parent Nodes (at the cost of dealing with
+        # invalidation when styles change)
+        if self.__cached_style is not None:
+            return self.__cached_style
+        # construct Style from spec if not found in cache
+        base_style = self.parent.style if self.parent is not None else None
+        derived_style = self.spec.derive_style(base_style)
+        # cache derived Style and return
+        self.__cached_style = derived_style
+        return derived_style
 
     def append(self, node: Node):
         """Append a new child Node."""

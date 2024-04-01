@@ -85,7 +85,8 @@ class NodeSpec:
     """Attributes related to Node styling and spacing constraints."""
 
     # style
-    style: Style
+    style: Style | typing.Literal["default"] | None  # explicit style to derive from - inherits from Parent if None
+    style_kwargs: WindowStyleKwargs
     # height
     height: int | float | None
     height_min: int | float | None
@@ -111,8 +112,6 @@ class NodeSpec:
     @classmethod
     def from_kwargs(
         cls,
-        # style
-        style: Style | typing.Literal["default"],
         # height
         h: int | float | None = None,
         min_h: int | float | None = None,
@@ -141,6 +140,8 @@ class NodeSpec:
         pb: int | float | None = None,
         pl: int | float | None = None,
         pr: int | float | None = None,
+        # style
+        style: Style | typing.Literal["default"] | None = None,
         **style_kwargs: typing.Unpack[WindowStyleKwargs],
     ):
         return cls(
@@ -166,5 +167,14 @@ class NodeSpec:
             padding_left=pl if pl is not None else px if px is not None else p if p is not None else 0,
             padding_right=pr if pr is not None else px if px is not None else p if p is not None else 0,
             # style
-            style=(Style.default if style == "default" else style).derive(**style_kwargs),
+            style=(Style.default if style == "default" else style),
+            style_kwargs=style_kwargs,
         )
+
+    def derive_style(self, base_style: Style | None = None):
+        """Derive Style object from NodeSpec and a base Style (if not overwritten)."""
+        if self.style is not None:
+            base_style = Style.default if self.style == "default" else self.style
+        else:
+            base_style = base_style if base_style is not None else Style.default
+        return base_style.derive(**self.style_kwargs)

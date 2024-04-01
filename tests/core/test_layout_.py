@@ -9,6 +9,12 @@ def nodes():
     return root
 
 
+@pytest.fixture
+def styled_nodes():
+    root = Row([Column([Row(style="default"), Row()], bold=True), Column()], italic=True)
+    return root
+
+
 def test_transpose(nodes):
     assert [n.orientation for n in nodes.flatten()] == ["row", "col", "row", "row", "col"]
 
@@ -23,3 +29,15 @@ def test_transpose(nodes):
     # transpose with depth -1 flips all nodes
     nodes.transpose(-1)
     assert [n.orientation for n in nodes.flatten()] == ["col", "col", "col", "col", "col"]
+
+
+def test_style_inheritance(styled_nodes):
+    assert styled_nodes.style.italic
+    # first column inherits italic flag
+    assert styled_nodes[0].style.italic and styled_nodes[0].style.bold
+    # first column inherits italic flag (but is not bold)
+    assert styled_nodes[1].style.italic and not styled_nodes[1].style.bold
+    # first row of first column has styles overwritten to default
+    assert not styled_nodes[0][0].style.italic and not styled_nodes[0][0].style.bold
+    # second row inherits both bold and italic flag
+    assert styled_nodes[0][1].style.italic and styled_nodes[0][1].style.bold
