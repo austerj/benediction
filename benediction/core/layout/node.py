@@ -69,8 +69,8 @@ class ContainerNode(Node):
         self,
         top: int | None = None,
         left: int | None = None,
-        width: int | None = None,
         height: int | None = None,
+        width: int | None = None,
     ):
         """Update frame to the smallest region that contains the given dimensions and all child nodes."""
         # NOTE: this is a bottoms-up approach - basically, assume the child nodes have dealt with

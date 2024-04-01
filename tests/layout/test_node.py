@@ -1,5 +1,6 @@
 import pytest
 
+from benediction import errors
 from benediction.core.layout.node import ContainerNode
 
 
@@ -91,3 +92,13 @@ def test_update_frame(sized_nodes):
     # after updating it will match the depth 1 boundary
     sized_nodes.update_frame()
     assert sized_nodes.frame.width_outer == 7
+
+    # cannot infer frame when no child nodes have frames defined
+    unsized_nodes = ContainerNode()
+    unsized_node_0 = ContainerNode(unsized_nodes)
+    with pytest.raises(errors.NodeFrameError):
+        unsized_nodes.update_frame()
+    # ...but works if giving explicit dimensions
+    unsized_nodes.update_frame(0, 0, 10, 5)
+    assert unsized_nodes.frame.height == 10
+    assert unsized_nodes.frame.width == 5
