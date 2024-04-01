@@ -1,6 +1,6 @@
 import pytest
 
-from benediction.core.layout import Column, Row
+from benediction.core.node import Column, Row
 
 
 @pytest.fixture

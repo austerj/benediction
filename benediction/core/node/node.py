@@ -6,7 +6,7 @@ from dataclasses import InitVar, dataclass, field
 
 from benediction import errors
 from benediction.core.frame import ConstrainedFrame
-from benediction.core.spec import NodeSpec, NodeSpecKwargs
+from benediction.core.node.spec import NodeSpec, NodeSpecKwargs
 
 
 @dataclass(slots=True, repr=False)

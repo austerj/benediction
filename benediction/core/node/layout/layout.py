@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass, field
 
-from benediction.core.node import Node
+from benediction.core.node.node import Node
 
 
 @dataclass(slots=True, repr=False)
