@@ -97,14 +97,13 @@ def test_update_frame(sized_nodes):
     assert sized_nodes.frame.height_outer == 13
 
     # updating frame of depth 1 node overwrites the existing frame
-    node_0 = sized_nodes.children[0]
-    node_0.update_frame()
-    assert node_0.frame.top_abs == 1
-    assert node_0.frame.left_abs == 2
-    assert node_0.frame.right_abs == 8
-    assert node_0.frame.bottom_abs == 13
-    assert node_0.frame.width_outer == 7
-    assert node_0.frame.height_outer == 13
+    sized_nodes[0].update_frame()
+    assert sized_nodes[0].frame.top_abs == 1
+    assert sized_nodes[0].frame.left_abs == 2
+    assert sized_nodes[0].frame.right_abs == 8
+    assert sized_nodes[0].frame.bottom_abs == 13
+    assert sized_nodes[0].frame.width_outer == 7
+    assert sized_nodes[0].frame.height_outer == 13
 
     # original frame hasn't been updated yet
     assert sized_nodes.frame.width_outer == 8

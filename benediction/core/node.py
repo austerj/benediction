@@ -26,6 +26,17 @@ class Node(ABC):
     def __repr__(self):
         return f"{self.__class__.__name__}({', '.join([str(c) for c in self.children])})"
 
+    @typing.overload
+    def __getitem__(self, __i: typing.SupportsIndex) -> Node:
+        ...
+
+    @typing.overload
+    def __getitem__(self, __s: slice) -> list[Node]:
+        ...
+
+    def __getitem__(self, i):
+        return self.children.__getitem__(i)
+
     @property
     def frame(self):
         """Inner Frame associated with Node."""
