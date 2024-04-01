@@ -1,7 +1,7 @@
 import pytest
 
 from benediction import errors
-from benediction.core.layout.node import ContainerNode
+from benediction.core.node import ContainerNode
 
 
 @pytest.fixture

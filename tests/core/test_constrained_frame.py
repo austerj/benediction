@@ -1,7 +1,7 @@
 import pytest
 
 from benediction import errors
-from benediction.core.layout.frame import ConstrainedFrame
+from benediction.core.frame import ConstrainedFrame
 
 h, h_min, h_max = 0.6, 25, 30
 w, w_min, w_max = 0.5, 10, 40

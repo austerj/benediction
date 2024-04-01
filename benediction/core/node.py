@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from benediction import errors
-from benediction.core.layout.frame import ConstrainedFrame
+from benediction.core.frame import ConstrainedFrame
 
 
 @dataclass(slots=True, repr=False)
@@ -52,8 +52,8 @@ class Node(ABC):
         self,
         top: int | None = None,
         left: int | None = None,
-        width: int | None = None,
         height: int | None = None,
+        width: int | None = None,
         *args,
         **kwargs,
     ):
@@ -61,6 +61,10 @@ class Node(ABC):
         raise NotImplementedError
 
 
+# NOTE: this node type is mainly intended for building "last-depth" components, i.e. nodes that have
+# a small / static number of children - layouts should be built with LayoutNodes, which uses a
+# top-down approach to allocation of frames (defining available space at the root node) instead of a
+# bottoms-up approach that relies on explicitly setting frame dimensions on child nodes
 @dataclass(slots=True, repr=False)
 class ContainerNode(Node):
     """Node object with dimensions dictated by its children."""

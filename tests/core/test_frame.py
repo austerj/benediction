@@ -1,7 +1,7 @@
 import pytest
 
 from benediction import errors
-from benediction.core.layout.frame import Frame
+from benediction.core.frame import Frame
 
 t, l, h, w = 5, 2, 50, 20
 pt, pb, pl, pr = 2, 2, 1, 1
