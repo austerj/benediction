@@ -32,8 +32,13 @@ class Node(ABC):
         self.cframe = ConstrainedFrame.from_spec(self.spec)
 
         for node in self.children:
-            if node.parent is not None:
-                node.parent.children.remove(node)
+            if (old_parent := node.parent) is not None:
+                # iterate over child nodes and pop + break out on a match (by id - NOT equality!)
+                for i, child_node in enumerate(old_parent.children):
+                    if node is child_node:
+                        old_parent.children.pop(i)
+                        break
+
             node.parent = self
 
     def __repr__(self):
@@ -49,6 +54,11 @@ class Node(ABC):
 
     def __getitem__(self, i):
         return self.children.__getitem__(i)
+
+    def __contains__(self, node: Node):
+        # compare by id (i.e. by memory - NOT equality)
+        node_id = id(node)
+        return any(node_id == id(child) for child in self.children)
 
     @property
     def frame(self):

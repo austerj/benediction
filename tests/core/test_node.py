@@ -121,13 +121,30 @@ def test_update_frame(sized_nodes):
     assert unsized_nodes.frame.width == 5
 
 
-def test_parent_removal(sized_nodes):
+def test_parent_removal():
+    old_parent = ContainerNode(
+        [
+            node_0 := ContainerNode([node_0_0 := ContainerNode()]),
+            node_1 := ContainerNode([node_1_0 := ContainerNode()]),
+        ]
+    )
+
+    # the nodes are different objects
+    assert not node_0 is node_1
+    assert node_1_0.parent is node_1
+    assert node_0_0.parent is node_0
+
     # child is in original node
-    old_parent = sized_nodes
-    child = old_parent[0]
-    assert child in old_parent
+    assert node_1 in old_parent
 
     # moving a node to another parent removes it from the original
-    new_parent = ContainerNode([child])
-    assert child in new_parent
-    assert child not in old_parent
+    new_parent = ContainerNode([node_1])
+    assert node_1 in new_parent
+    assert node_1 not in old_parent
+
+    # the different parent nodes have the same expected number of elements
+    assert len(old_parent.flatten()) == 3
+    assert len(new_parent.flatten()) == 3
+
+    # the parent of the nested node is still the same
+    assert node_1_0.parent is node_1
