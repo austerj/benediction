@@ -79,10 +79,10 @@ class Frame:
     ):
         """Assign static dimensions."""
         # validate outer dimensions
-        if top <= 0:
-            raise errors.FrameError(f"Invalid {top=}: must be strictly positive")
-        elif left <= 0:
-            raise errors.FrameError(f"Invalid {left=}: must be strictly positive")
+        if top < 0:
+            raise errors.FrameError(f"Invalid {top=}: must be positive")
+        elif left < 0:
+            raise errors.FrameError(f"Invalid {left=}: must be positive")
         elif height <= 0:
             raise errors.FrameError(f"Invalid {height=}: must be strictly positive")
         elif width <= 0:
@@ -402,7 +402,7 @@ class ConstrainedFrame:
     def width_bounds(self, outer_width: int) -> tuple[int | None, int | None]:
         """Get width bounds for outer width."""
         return self.abs(self.width_min, outer_width), self.abs(self.width_max, outer_width)
-
+    
     def margins(self, outer_height: int, outer_width: int):
         """Get (top, bottom, left, right)-margins for outer height and width."""
         return (
