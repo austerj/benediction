@@ -13,14 +13,15 @@ class Node(ABC):
     """Object that forms part of a hierarchy of relations to parent and child Nodes."""
 
     # relational nodes
-    parent: Node | None = None
+    parent: Node | None = field(default=None, init=False)
     children: list[Node] = field(default_factory=list)
     # constrained frame
     cframe: ConstrainedFrame = field(default_factory=ConstrainedFrame, init=False)
 
     def __post_init__(self):
-        if self.parent:
-            self.parent.children.append(self)
+        # TODO (?): .move(old_parent, new_parent) that removes node from list in old parent
+        for node in self.children:
+            node.parent = self
 
     def __repr__(self):
         return f"{self.__class__.__name__}({', '.join([str(c) for c in self.children])})"
@@ -30,8 +31,13 @@ class Node(ABC):
         """Inner Frame associated with Node."""
         return self.cframe.frame
 
+    def append(self, node: Node):
+        """Append a new child Node."""
+        self.children.append(node)
+        node.parent = self
+
     def apply(self, fn: typing.Callable[[Node], typing.Any], depth: int = -1, to_self: bool = True):
-        """Apply function to (optional) self and all child nodes recursively."""
+        """Apply function to (optional) self and all child Nodes recursively."""
         if to_self:
             fn(self)
         # break on 0 depth => continue indefinitely if depth<0
@@ -42,7 +48,7 @@ class Node(ABC):
             child.apply(fn, depth - 1)
 
     def flatten(self, depth: int = -1, include_self: bool = True):
-        """Get flattened list of child nodes."""
+        """Get flattened list of child Nodes."""
         nodes = []
         self.apply(lambda node: nodes.append(node), depth, include_self)
         return nodes
@@ -76,7 +82,7 @@ class ContainerNode(Node):
         height: int | None = None,
         width: int | None = None,
     ):
-        """Update frame to the smallest region that contains the given dimensions and all child nodes."""
+        """Update frame to the smallest region that contains the given dimensions and all child Nodes."""
         # NOTE: this is a bottoms-up approach - basically, assume the child nodes have dealt with
         # their frames explicitly and infer the boundary from them, ignoring all constraints (since
         # we are not working relative to an outer frame)

@@ -7,34 +7,53 @@ from benediction.core.node import ContainerNode
 @pytest.fixture
 def nodes():
     # depth 0
-    root = ContainerNode()
-    # depth 1
-    node_0 = ContainerNode(root)
-    node_1 = ContainerNode(root)
-    # depth 2
-    node_0_0 = ContainerNode(node_0)
-    node_0_1 = ContainerNode(node_0)
-    node_0_2 = ContainerNode(node_0)
-    node_1_0 = ContainerNode(node_1)
-    node_1_1 = ContainerNode(node_1)
-    # depth 3
-    node_1_1_0 = ContainerNode(node_1_1)
-    node_1_1_1 = ContainerNode(node_1_1)
+    root = ContainerNode(
+        [
+            # depth 1
+            node_0 := ContainerNode(
+                [
+                    # depth 2
+                    node_0_0 := ContainerNode(),
+                    node_0_1 := ContainerNode(),
+                    node_0_2 := ContainerNode(),
+                ]
+            ),
+            node_1 := ContainerNode(
+                [
+                    # depth 2
+                    node_1_0 := ContainerNode(),
+                    node_1_1 := ContainerNode(
+                        [
+                            # depth 3
+                            node_1_1_0 := ContainerNode(),
+                            node_1_1_1 := ContainerNode(),
+                        ]
+                    ),
+                ]
+            ),
+        ]
+    )
     return root
 
 
 @pytest.fixture
 def sized_nodes():
     # depth 0
-    root = ContainerNode()
-    # depth 1
-    node_0 = ContainerNode(root)
+    root = ContainerNode(
+        [
+            # depth 1
+            node_0 := ContainerNode(
+                [
+                    # depth 2
+                    node_0_0 := ContainerNode(),
+                    node_0_1 := ContainerNode(),
+                    node_0_2 := ContainerNode(),
+                ]
+            ),
+        ]
+    )
     node_0.cframe.frame.set_dimensions(6, 1, 7, 7)
-    # depth 2
-    node_0_0 = ContainerNode(node_0)
     node_0_0.cframe.frame.set_dimensions(1, 2, 5, 5)
-    node_0_1 = ContainerNode(node_0)
-    node_0_2 = ContainerNode(node_0)
     node_0_2.cframe.frame.set_dimensions(12, 7, 2, 2)
     return root
 
@@ -94,8 +113,7 @@ def test_update_frame(sized_nodes):
     assert sized_nodes.frame.width_outer == 7
 
     # cannot infer frame when no child nodes have frames defined
-    unsized_nodes = ContainerNode()
-    unsized_node_0 = ContainerNode(unsized_nodes)
+    unsized_nodes = ContainerNode([ContainerNode()])
     with pytest.raises(errors.NodeFrameError):
         unsized_nodes.update_frame()
     # ...but works if giving explicit dimensions
