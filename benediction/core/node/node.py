@@ -16,15 +16,22 @@ class Node(ABC):
     # relational nodes
     parent: Node | None = field(default=None, init=False)
     children: list[Node] = field(default_factory=list)
-    # NodeSpec governing constraints on frames and allocation of space to child Nodes
+    # NodeSpec governing styling, constraints on frames and allocation of space to child Nodes
     spec: NodeSpec = field(init=False, repr=False)
     spec_kwargs: InitVar[NodeSpecKwargs | None] = field(default=None, kw_only=True)
     # constrained frame
     cframe: ConstrainedFrame = field(init=False, repr=False)
 
     def __post_init__(self, spec_kwargs: NodeSpecKwargs | None):
-        self.spec = NodeSpec.from_kwargs(**spec_kwargs) if spec_kwargs else NodeSpec.default
+        # get style from parent if not explicitly overwritten by kwargs, else use (empty) default
+        spec_kwargs = {} if spec_kwargs is None else spec_kwargs
+        if not "style" in spec_kwargs:
+            spec_kwargs["style"] = self.parent.style if self.parent is not None else "default"
+
+        # set spec and frame
+        self.spec = NodeSpec.from_kwargs(**spec_kwargs)
         self.cframe = ConstrainedFrame.from_spec(self.spec)
+
         # TODO (?): .move(old_parent, new_parent) that removes node from list in old parent
         for node in self.children:
             node.parent = self
@@ -47,6 +54,11 @@ class Node(ABC):
     def frame(self):
         """Inner Frame associated with Node."""
         return self.cframe.frame
+
+    @property
+    def style(self):
+        """Style object associated with Node."""
+        return self.spec.style
 
     def append(self, node: Node):
         """Append a new child Node."""

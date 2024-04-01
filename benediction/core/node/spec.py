@@ -84,7 +84,8 @@ class NodeSpecKwargs(BaseNodeSpecKwargs, ColumnKwargs, RowKwargs):
 class NodeSpec:
     """Attributes related to Node styling and spacing constraints."""
 
-    default: typing.ClassVar["NodeSpec"]
+    # style
+    style: Style
     # height
     height: int | float | None
     height_min: int | float | None
@@ -106,12 +107,12 @@ class NodeSpec:
     padding_bottom: int | float
     padding_left: int | float
     padding_right: int | float
-    # style
-    style: Style
 
     @classmethod
     def from_kwargs(
         cls,
+        # style
+        style: Style | typing.Literal["default"],
         # height
         h: int | float | None = None,
         min_h: int | float | None = None,
@@ -140,8 +141,6 @@ class NodeSpec:
         pb: int | float | None = None,
         pl: int | float | None = None,
         pr: int | float | None = None,
-        # style
-        style: Style | typing.Literal["default"] = Style.default,
         **style_kwargs: typing.Unpack[WindowStyleKwargs],
     ):
         return cls(
@@ -169,6 +168,3 @@ class NodeSpec:
             # style
             style=(Style.default if style == "default" else style).derive(**style_kwargs),
         )
-
-
-NodeSpec.default = NodeSpec.from_kwargs()
