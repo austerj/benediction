@@ -8,6 +8,7 @@ from benediction._utils import to_abs
 
 if typing.TYPE_CHECKING:
     from benediction.core.node.spec import NodeSpec
+    from benediction.core.window import AbstractWindow
 
 OverflowBoundary = typing.Literal["inner", "outer"]
 
@@ -53,6 +54,8 @@ _YTOPROP: dict[VerticalPosition, str] = {key: key.replace("-", "_") for key in _
 @dataclass(slots=True, repr=False)
 class Frame:
     """Representation of a fixed region of space with associated methods for positioning."""
+
+    __window: AbstractWindow | None = field(default=None, init=False)
 
     # attributes assigned on set_dimensions call
     __top: int | None = field(default=None, init=False)
@@ -106,11 +109,25 @@ class Frame:
         self.__padding_bottom = padding_bottom
         self.__padding_left = padding_left
         self.__padding_right = padding_right
+        # update window if bound
+        if self.__window:
+            self.window.on_frame_update()
+
+    def bind_window(self, window: AbstractWindow | None):
+        self.__window = window
+        return self
 
     @property
     def is_ready(self) -> bool:
         """Flag denoting if dimensions have been assigned."""
         return self.__width is not None
+
+    @property
+    def window(self) -> AbstractWindow:
+        """Window being controlled by Frame."""
+        if self.__window is None:
+            raise errors.WindowError(f"No Frame has been bound to {self.__class__.__name__}.")
+        return self.__window
 
     # dimensions
     @property
