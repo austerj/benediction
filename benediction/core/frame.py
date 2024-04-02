@@ -385,48 +385,48 @@ class ConstrainedFrame:
 
     @typing.overload
     @staticmethod
-    def abs(units: int | float, outer_space: int) -> int:
+    def abs(units: int | float, space_outer: int) -> int:
         ...
 
     @typing.overload
     @staticmethod
-    def abs(units: None, outer_space: int) -> None:
+    def abs(units: None, space_outer: int) -> None:
         ...
 
     @staticmethod
-    def abs(units: int | float | None, outer_space: int):
+    def abs(units: int | float | None, space_outer: int):
         """Interpret as absolute units if integer, otherwise as rounded-down ratio of space."""
-        return int(units * outer_space) if isinstance(units, float) else units
+        return int(units * space_outer) if isinstance(units, float) else units
 
-    def height_bounds(self, outer_height: int) -> tuple[int | None, int | None]:
+    def height_bounds(self, height_outer: int) -> tuple[int | None, int | None]:
         """Get height bounds for outer height."""
-        return self.abs(self.height_min, outer_height), self.abs(self.height_max, outer_height)
+        return self.abs(self.height_min, height_outer), self.abs(self.height_max, height_outer)
 
-    def width_bounds(self, outer_width: int) -> tuple[int | None, int | None]:
+    def width_bounds(self, width_outer: int) -> tuple[int | None, int | None]:
         """Get width bounds for outer width."""
-        return self.abs(self.width_min, outer_width), self.abs(self.width_max, outer_width)
+        return self.abs(self.width_min, width_outer), self.abs(self.width_max, width_outer)
 
-    def margins(self, outer_height: int, outer_width: int):
+    def margins(self, height_outer: int, width_outer: int):
         """Get (top, bottom, left, right)-margins for outer height and width."""
         return (
-            self.abs(self.margin_top, outer_height),
-            self.abs(self.margin_bottom, outer_height),
-            self.abs(self.margin_left, outer_width),
-            self.abs(self.margin_right, outer_width),
+            self.abs(self.margin_top, height_outer),
+            self.abs(self.margin_bottom, height_outer),
+            self.abs(self.margin_left, width_outer),
+            self.abs(self.margin_right, width_outer),
         )
 
-    def dimensions(self, top: int, left: int, height: int, width: int, outer_height: int, outer_width: int):
+    def dimensions(self, top: int, left: int, height: int, width: int, height_outer: int, width_outer: int):
         """Get post-margined (top, left, height, width)-dimensions for outer height and width."""
-        mt, mb, ml, mr = self.margins(outer_height, outer_width)
+        mt, mb, ml, mr = self.margins(height_outer, width_outer)
         return top + mt, left + ml, height - (mt + mb), width - (ml + mr)
 
-    def padding(self, outer_height: int, outer_width: int):
+    def padding(self, height_outer: int, width_outer: int):
         """Get (top, bottom, left, right)-padding for outer height and width."""
         return (
-            self.abs(self.padding_top, outer_height),
-            self.abs(self.padding_bottom, outer_height),
-            self.abs(self.padding_left, outer_width),
-            self.abs(self.padding_right, outer_width),
+            self.abs(self.padding_top, height_outer),
+            self.abs(self.padding_bottom, height_outer),
+            self.abs(self.padding_left, width_outer),
+            self.abs(self.padding_right, width_outer),
         )
 
     def set_dimensions(
@@ -435,19 +435,19 @@ class ConstrainedFrame:
         left: int,
         height: int,
         width: int,
-        outer_height: int,
-        outer_width: int,
+        height_outer: int,
+        width_outer: int,
     ):
         """Assign dimensions to inner Frame."""
-        if not self.height is None and height != self.abs(self.height, outer_height):
+        if not self.height is None and height != self.abs(self.height, height_outer):
             cons = "absolute" if isinstance(self.height, int) else "relative"
             raise errors.FrameConstraintError(f"Height violates exact ({cons}) height constraint.")
-        if not self.width is None and width != self.abs(self.width, outer_width):
+        if not self.width is None and width != self.abs(self.width, width_outer):
             cons = "absolute" if isinstance(self.height, int) else "relative"
             raise errors.FrameConstraintError(f"Width violates exact ({cons}) width constraint.")
         # validate against min/max constraints
-        h_min, h_max = self.height_bounds(outer_height)
-        w_min, w_max = self.width_bounds(outer_width)
+        h_min, h_max = self.height_bounds(height_outer)
+        w_min, w_max = self.width_bounds(width_outer)
         if h_min is not None and height < h_min:
             raise errors.FrameConstraintError("Height violates lower bound.")
         if h_max is not None and height > h_max:
@@ -458,8 +458,8 @@ class ConstrainedFrame:
             raise errors.FrameConstraintError("Width violates upper bound.")
         # let Frame validate dimensions
         self.frame.set_dimensions(
-            *self.dimensions(top, left, height, width, outer_height, outer_width),
-            *self.padding(outer_height, outer_width),
+            *self.dimensions(top, left, height, width, height_outer, width_outer),
+            *self.padding(height_outer, width_outer),
         )
         return self
 
