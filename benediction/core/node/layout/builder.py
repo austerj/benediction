@@ -45,7 +45,7 @@ class LayoutNodeFactory:
             return self.parent
         else:
             # adding col from row node => append a col to the row node
-            new_col = Column(**kwargs).bind(window)
+            new_col = Column(**kwargs).bind_window(window)
             self._last_added = new_col
             self.node.append(new_col)
         return self
@@ -62,7 +62,7 @@ class LayoutNodeFactory:
             return self.parent
         else:
             # adding row from column node => append a row to the column node
-            new_row = Row(**kwargs).bind(window)
+            new_row = Row(**kwargs).bind_window(window)
             self._last_added = new_row
             self.node.append(new_row)
         return self
@@ -90,7 +90,7 @@ class Layout:
     def row(self, window: AbstractWindow | None = None, **kwargs: typing.Unpack[RowSpecKwargs]):
         """Subdivide layout into rows via chained methods."""
         if self.__node is None:
-            self.__node = Column(**self.kwargs).bind(self.__node_window)
+            self.__node = Column(**self.kwargs).bind_window(self.__node_window)
         elif self.__node.is_row:
             raise errors.LayoutError("Cannot add row to row-major layout.")
         return LayoutNodeFactory(None, self.node).row(window, **kwargs)
@@ -98,7 +98,7 @@ class Layout:
     def col(self, window: AbstractWindow | None = None, **kwargs: typing.Unpack[ColumnSpecKwargs]):
         """Subdivide layout into columns via chained methods."""
         if self.__node is None:
-            self.__node = Row(**self.kwargs).bind(self.__node_window)
+            self.__node = Row(**self.kwargs).bind_window(self.__node_window)
         elif self.__node.is_col:
             raise errors.LayoutError("Cannot add column to column-major layout.")
         return LayoutNodeFactory(None, self.node).col(window, **kwargs)

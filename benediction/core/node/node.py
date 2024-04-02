@@ -112,7 +112,7 @@ class Node(ABC):
         self.apply(lambda node: nodes.append(node), depth, include_self)
         return nodes
 
-    def bind(self, window: AbstractWindow | None):
+    def bind_window(self, window: AbstractWindow | None):
         """Bind AbstractWindow to Node."""
         self._window = window
         return self
