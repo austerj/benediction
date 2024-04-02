@@ -5,6 +5,11 @@ class BenedictionError(Exception, ABC):
     ...
 
 
+# errors raised by / related to the application layer
+class ApplicationError(BenedictionError):
+    ...
+
+
 # errors raised by / related to layouts
 class LayoutError(BenedictionError):
     ...

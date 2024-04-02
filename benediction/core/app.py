@@ -9,7 +9,7 @@ from contextlib import _GeneratorContextManager, contextmanager
 from dataclasses import dataclass, field
 
 from benediction import errors
-from benediction.core.node.spec import NodeSpecKwargs
+from benediction.core.node import Layout, NodeSpecKwargs
 from benediction.core.screen import CursorVisibility, Screen
 
 ErrorType = typing.Literal["curses", "benediction", "all", "layout", "window"]
@@ -24,6 +24,7 @@ _ERRORS: dict[ErrorType, typing.Type[Exception]] = {
 
 @dataclass
 class Application(ABC):
+    _layout: Layout | None = field(default=None, init=False, repr=False)
     _screen: Screen | None = field(default=None, init=False, repr=False)
     running: bool | None = field(default=None, init=False)
     # behavior flags
@@ -69,13 +70,19 @@ class Application(ABC):
     @property
     def screen(self):
         if not self._screen:
-            raise errors.ScreenError("Cannot access screen before running.")
+            raise errors.ApplicationError("Cannot access Screen before running.")
         return self._screen
+
+    @property
+    def root(self):
+        if not self._layout:
+            raise errors.ApplicationError("Cannot access layout Node before running.")
+        return self._layout.node
 
     def run(self):
         """Run application."""
         if not (self.allow_rerun or self.running is None):
-            raise RuntimeError("Application has already been run.")
+            raise errors.ApplicationError("Application has already been run.")
         try:
             # flag running and initialize screen
             self.running = True
@@ -134,9 +141,12 @@ class Application(ABC):
         self.update()
         self.screen.noutrefresh()
 
-    def new_layout(self, **kwargs: typing.Unpack[NodeSpecKwargs]):
-        """Return a new layout managed by the application screen."""
-        return self.screen.new_layout(**kwargs)
+    def layout(self, **kwargs: typing.Unpack[NodeSpecKwargs]):
+        """Initialize a new layout managed by the application screen."""
+        if self._layout:
+            raise errors.ApplicationError("Layout has already been initialized.")
+        self._layout = self.screen.new_layout(**kwargs)
+        return self._layout
 
     def exit(self):
         """Break out from main loop."""
