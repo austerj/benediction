@@ -65,7 +65,7 @@ class Frame:
 
     def __repr__(self):
         if self.is_ready:
-            return f"{self.__class__.__name__}(y={self.top_abs}, x={self.left_abs}, w={self.width_outer}, h={self.height_outer})"
+            return f"{self.__class__.__name__}(y={self.top_abs}, x={self.left_abs}, h={self.height_outer}, w={self.width_outer})"
         else:
             return f"{self.__class__.__name__}()"
 
@@ -438,7 +438,7 @@ class ConstrainedFrame:
         height_outer: int,
         width_outer: int,
     ):
-        """Assign dimensions to inner Frame."""
+        """Assign dimensions to inner Frame and return (top, left, height, width) dimensions."""
         if not self.height is None and height != self.abs(self.height, height_outer):
             cons = "absolute" if isinstance(self.height, int) else "relative"
             raise errors.FrameConstraintError(f"Height violates exact ({cons}) height constraint.")
@@ -456,12 +456,17 @@ class ConstrainedFrame:
             raise errors.FrameConstraintError("Width violates lower bound.")
         if w_max is not None and width > w_max:
             raise errors.FrameConstraintError("Width violates upper bound.")
+        # get margined dimensions
+        top, left, height, width = self.dimensions(top, left, height, width, height_outer, width_outer)
         # let Frame validate dimensions
         self.frame.set_dimensions(
-            *self.dimensions(top, left, height, width, height_outer, width_outer),
+            top,
+            left,
+            height,
+            width,
             *self.padding(height_outer, width_outer),
         )
-        return self
+        return top, left, height, width
 
     @classmethod
     def from_spec(cls, spec: NodeSpec):
