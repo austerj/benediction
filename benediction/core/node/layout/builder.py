@@ -77,42 +77,42 @@ class Layout:
 
     def __init__(
         self,
-        __root_window: AbstractWindow | None = None,
+        __node_window: AbstractWindow | None = None,
         **kwargs: typing.Unpack[NodeSpecKwargs],
     ):
-        self.__root = None
-        self.__root_window = __root_window
+        self.__node = None
+        self.__node_window = __node_window
         self.kwargs = kwargs
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.root if self.__root is not None else ''})"
+        return f"{self.__class__.__name__}({self.node if self.__node is not None else ''})"
 
     def row(self, window: AbstractWindow | None = None, **kwargs: typing.Unpack[RowSpecKwargs]):
         """Subdivide layout into rows via chained methods."""
-        if self.__root is None:
-            self.__root = Column(**self.kwargs).bind(self.__root_window)
-        elif self.__root.is_row:
+        if self.__node is None:
+            self.__node = Column(**self.kwargs).bind(self.__node_window)
+        elif self.__node.is_row:
             raise errors.LayoutError("Cannot add row to row-major layout.")
-        return LayoutNodeFactory(None, self.root).row(window, **kwargs)
+        return LayoutNodeFactory(None, self.node).row(window, **kwargs)
 
     def col(self, window: AbstractWindow | None = None, **kwargs: typing.Unpack[ColumnSpecKwargs]):
         """Subdivide layout into columns via chained methods."""
-        if self.__root is None:
-            self.__root = Row(**self.kwargs).bind(self.__root_window)
-        elif self.__root.is_col:
+        if self.__node is None:
+            self.__node = Row(**self.kwargs).bind(self.__node_window)
+        elif self.__node.is_col:
             raise errors.LayoutError("Cannot add column to column-major layout.")
-        return LayoutNodeFactory(None, self.root).col(window, **kwargs)
+        return LayoutNodeFactory(None, self.node).col(window, **kwargs)
 
     @property
-    def root(self) -> LayoutNode:
-        if self.__root is None:
+    def node(self) -> LayoutNode:
+        if self.__node is None:
             raise errors.LayoutError("No root node in layout - add a node with 'col' or 'row' methods.")
-        return self.__root
+        return self.__node
 
     @property
     def order(self):
         """Order of layout (row / column major)."""
-        return self.root.orientation
+        return self.node.orientation
 
     @typing.overload
     def __getitem__(self, __i: typing.SupportsIndex) -> Node:
@@ -123,4 +123,4 @@ class Layout:
         ...
 
     def __getitem__(self, i):
-        return self.root.__getitem__(i)
+        return self.node.__getitem__(i)
