@@ -141,6 +141,16 @@ class Node(ABC):
         """Update the Frame dimensions of the Node."""
         raise NotImplementedError
 
+    def noutrefresh(self):
+        """Refresh Node window if bound."""
+        if not self._window is None:
+            self.window.noutrefresh()
+
+    def clear(self):
+        """Clear Node window if bound."""
+        if not self._window is None:
+            self.window.clear()
+
 
 # NOTE: this node type is mainly intended for building "last-depth" components, i.e. nodes that have
 # a small / static number of children - layouts should be built with LayoutNodes, which uses a
