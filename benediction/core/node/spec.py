@@ -36,8 +36,8 @@ class PaddingKwargs(typing.TypedDict):
 
 
 # row / column-specific kwargs
-class ColumnKwargs(typing.TypedDict):
-    """Keys related to constraints on Column height and spacing."""
+class RowKwargs(typing.TypedDict):
+    """Keys related to constraints on Row height and spacing."""
 
     h: typing.NotRequired[int | float | None]
     min_h: typing.NotRequired[int | float | None]
@@ -45,8 +45,8 @@ class ColumnKwargs(typing.TypedDict):
     gap_x: typing.NotRequired[int | float]
 
 
-class RowKwargs(typing.TypedDict):
-    """Keys related to constraints on Row width and spacing."""
+class ColumnKwargs(typing.TypedDict):
+    """Keys related to constraints on Column width and spacing."""
 
     w: typing.NotRequired[int | float | None]
     min_w: typing.NotRequired[int | float | None]
@@ -61,7 +61,7 @@ class BaseNodeSpecKwargs(StyleKwargs, MarginKwargs, PaddingKwargs):
 
 
 # row / column kwargs (to only show spec kwargs that will apply at initial orientation)
-class RowSpecKwargs(BaseNodeSpecKwargs, ColumnKwargs):
+class RowSpecKwargs(BaseNodeSpecKwargs, RowKwargs):
     """Keys related to Row NodeSpecs."""
 
     ...
@@ -74,7 +74,7 @@ class ColumnSpecKwargs(BaseNodeSpecKwargs, ColumnKwargs):
 
 
 # general NodeSpec kwargs (for all NodeSpecs)
-class NodeSpecKwargs(BaseNodeSpecKwargs, ColumnKwargs, RowKwargs):
+class NodeSpecKwargs(BaseNodeSpecKwargs, RowKwargs, ColumnKwargs):
     """Keys related to NodeSpecs."""
 
     gap: typing.NotRequired[int | float]
@@ -108,6 +108,16 @@ class NodeSpec:
     padding_bottom: int | float
     padding_left: int | float
     padding_right: int | float
+
+    @property
+    def margins(self):
+        """Get (top, bottom, left, right) margin parameters."""
+        return self.margin_top, self.margin_bottom, self.margin_left, self.margin_right
+
+    @property
+    def padding(self):
+        """Get (top, bottom, left, right) padding parameters."""
+        return self.padding_top, self.padding_bottom, self.padding_left, self.padding_right
 
     @classmethod
     def from_kwargs(
