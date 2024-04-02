@@ -9,7 +9,7 @@ from contextlib import _GeneratorContextManager, contextmanager
 from dataclasses import dataclass, field
 
 from benediction import errors
-from benediction.layout import LayoutKwargs
+from benediction.core.node.spec import NodeSpecKwargs
 from benediction.screen import CursorVisibility, Screen
 
 ErrorType = typing.Literal["curses", "benediction", "all", "layout", "window"]
@@ -134,14 +134,9 @@ class Application(ABC):
         self.update()
         self.screen.noutrefresh()
 
-    def new_layout(
-        self,
-        gap_y: int | float | None = None,
-        gap_x: int | float | None = None,
-        **kwargs: typing.Unpack[LayoutKwargs],
-    ):
+    def new_layout(self, **kwargs: typing.Unpack[NodeSpecKwargs]):
         """Return a new layout managed by the application screen."""
-        return self.screen.new_layout(gap_y, gap_x, **kwargs)
+        return self.screen.new_layout(**kwargs)
 
     def exit(self):
         """Break out from main loop."""

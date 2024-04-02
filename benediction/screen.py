@@ -2,9 +2,10 @@ import curses
 import typing
 from dataclasses import dataclass, field
 
-from benediction.layout import Layout, LayoutKwargs
+from benediction.core.frame import Frame
+from benediction.core.node.layout.builder import Layout, NodeSpecKwargs
+from benediction.core.window import ScreenWindow
 from benediction.style.color._color import reset_colors
-from benediction.window import ScreenWindow
 
 CursorVisibility = typing.Literal[typing.Literal["invisible", "normal", "very"]]
 _CURSOR_VISIBILITY: dict[CursorVisibility, int] = {
@@ -16,6 +17,7 @@ _CURSOR_VISIBILITY: dict[CursorVisibility, int] = {
 
 @dataclass(slots=True)
 class Screen:
+    _frame: Frame | None = field(default=None, init=False)
     _window: ScreenWindow | None = field(default=None, init=False)
     layouts: list[Layout] = field(default_factory=list, init=False)
     # screen flags
@@ -33,7 +35,7 @@ class Screen:
         # NOTE: screen window (root window) will not be cleared from within layout
         self.window.clear()
         for layout in self.layouts:
-            layout.clear()
+            layout.node.apply(lambda node: node.clear(), to_self=False)
 
     def refresh(self):
         """Refresh screen."""
@@ -44,24 +46,19 @@ class Screen:
         # NOTE: screen window (root window) will not be refreshed from within layout
         self.window.noutrefresh()
         for layout in self.layouts:
-            layout.noutrefresh()
+            layout.node.apply(lambda node: node.noutrefresh(), to_self=False)
 
     def update(self):
         """Update screen window and all layouts based on current screen size."""
         height, width = self.stdscr.getmaxyx()
         # NOTE: screen window (root window) will not have dimensions set from within layout
-        self.window.set_dimensions(0, 0, width, height)
+        self.window.frame.set_dimensions(0, 0, height, width)
         for layout in self.layouts:
-            layout.update(0, 0, width, height)
+            layout.node.update_frame(0, 0, height, width)
 
-    def new_layout(
-        self,
-        gap_y: int | float | None = None,
-        gap_x: int | float | None = None,
-        **kwargs: typing.Unpack[LayoutKwargs],
-    ):
+    def new_layout(self, **kwargs: typing.Unpack[NodeSpecKwargs]):
         """Return a new layout managed by the screen."""
-        layout = Layout(self.window, gap_y, gap_x, **kwargs)
+        layout = Layout(self.window, **kwargs)
         self.layouts.append(layout)
         return layout
 
@@ -69,7 +66,10 @@ class Screen:
         return self.stdscr.getch()
 
     def _setup(self):
+        # TODO: refactor into ScreenNode that takes care of binding etc.
         self._window = ScreenWindow().init()
+        self._frame = Frame().bind_window(self._window)
+        self._window.bind_frame(self._frame)
         # replicate initialization behavior of curses.wrapper
         curses.noecho()
         curses.cbreak()
