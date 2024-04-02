@@ -33,26 +33,8 @@ class Node(ABC):
         spec_kwargs = {} if spec_kwargs is None else spec_kwargs
         self.spec = NodeSpec.from_kwargs(**spec_kwargs)
         self.cframe = ConstrainedFrame.from_spec(self.spec)
-
-        # iterating over nodes followed by (unique) parents => only one assignment per parent
-        # NOTE: using ids should be okay to use as proxy for unique objects here since it shouldn't
-        # be possible for any of these objects to not stay alive (and have their ids replaced)
-        parent_to_children: dict[int, list[int]] = {}
-        parents: list[Node] = []
-        for node in self.children:
-            if (old_parent := node.parent) is not None:
-                # add to dict
-                if (parent_id := id(old_parent)) not in parent_to_children:
-                    parent_to_children[parent_id] = [id(node)]
-                    parents.append(old_parent)
-                else:
-                    parent_to_children[parent_id].append(id(node))
-            # update parent of reassigned node
-            node.parent = self
-        # remove ids from parents
-        for parent in parents:
-            removed_ids = set(parent_to_children[id(parent)])
-            parent.children = [node for node in parent.children if id(node) not in removed_ids]
+        # pop nodes from (potential) old parents
+        _move_parents(self, self.children)
 
     def __repr__(self):
         return f"{self.__class__.__name__}({', '.join([str(c) for c in self.children])})"
@@ -103,16 +85,15 @@ class Node(ABC):
 
     def append(self, node: Node):
         """Append a new child Node."""
-        if node in self.children:
+        self.extend(node)
+
+    def extend(self, *nodes: Node):
+        """Append new child Nodes."""
+        if any(node in self.children for node in nodes):
             raise errors.NodeError("Cannot append Node: is already a child.")
-        self.children.append(node)
-        # remove from old parent
-        if (old_parent := node.parent) is not None:
-            for i, parent_node in enumerate(old_parent.children):
-                if node is parent_node:
-                    old_parent.children.pop(i)
-                    break
-        node.parent = self
+        # remove from old parents and extend child list
+        _move_parents(self, nodes)
+        self.children.extend(nodes)
 
     def apply(self, fn: typing.Callable[[Node], typing.Any], depth: int = -1, to_self: bool = True):
         """Apply function to (optional) self and all child Nodes recursively."""
@@ -198,3 +179,26 @@ class ContainerNode(Node):
             self.cframe.frame.set_dimensions(top, left, height, width)  # type: ignore
         else:
             raise errors.NodeFrameError("Could not infer container dimensions.")
+
+
+def _move_parents(new_parent: Node, children: typing.Sequence[Node]):
+    """Move children from their old parent Node to a new parent Node."""
+    # NOTE: using ids should be okay to use as proxy for unique objects here since it shouldn't be
+    # possible for any of these objects to not stay alive (and have their ids replaced)
+    old_parent_to_children: dict[int, list[int]] = {}
+    old_parents: list[Node] = []
+    # iterating over nodes followed by (unique) parents => only one assignment per parent
+    for node in children:
+        if (old_parent := node.parent) is not None:
+            # add to dict
+            if (parent_id := id(old_parent)) not in old_parent_to_children:
+                old_parent_to_children[parent_id] = [id(node)]
+                old_parents.append(old_parent)
+            else:
+                old_parent_to_children[parent_id].append(id(node))
+        # update parent of reassigned node
+        node.parent = new_parent
+    # remove ids from parents
+    for old_parent in old_parents:
+        removed_ids = set(old_parent_to_children[id(old_parent)])
+        old_parent.children = [node for node in old_parent.children if id(node) not in removed_ids]
