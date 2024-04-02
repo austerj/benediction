@@ -98,6 +98,12 @@ class Node(ABC):
         _move_parents(self, nodes)
         self.children.extend(nodes)
 
+    def pop(self, __index: typing.SupportsIndex = -1):
+        """Pop a child Node."""
+        node = self.children.pop(__index)
+        node.parent = None
+        return node
+
     def apply(self, fn: typing.Callable[[Node], typing.Any], depth: int = -1, to_self: bool = True):
         """Apply function to (optional) self and all child Nodes recursively."""
         if to_self:

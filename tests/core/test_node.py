@@ -187,3 +187,29 @@ def test_parent_removal():
     # cannot append if already a child node
     with pytest.raises(errors.NodeError):
         parent_2.append(child_0_2)
+
+
+def test_pop():
+    parent_0 = ContainerNode(
+        [
+            p_0_node_0 := ContainerNode(),
+            p_0_node_1 := ContainerNode(),
+        ]
+    )
+    parent_1 = ContainerNode(
+        [
+            p_1_node_0 := ContainerNode(),
+            p_1_node_1 := ContainerNode(),
+        ]
+    )
+
+    assert p_0_node_0 in parent_0
+    assert p_0_node_1 in parent_0
+    assert p_1_node_0 in parent_1
+    assert p_1_node_1 in parent_1
+
+    popped_node = parent_0.pop()
+    assert p_0_node_1 not in parent_0
+
+    parent_1.append(popped_node)
+    assert p_0_node_1 in parent_1
