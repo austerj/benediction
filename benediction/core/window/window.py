@@ -39,17 +39,17 @@ class TextWrapKwargs(typing.TypedDict):
 class AbstractWindow(ABC):
     """Container class managing the dimenions of a curses window."""
 
-    __internal: "curses._CursesWindow | None" = field(default=None, init=False, repr=False)
-    __frame: Frame | None = field(default=None, init=False)
+    _internal: "curses._CursesWindow | None" = field(default=None, init=False, repr=False)
+    _frame: Frame | None = field(default=None, init=False)
     # styles
-    __style: Style = field(default=Style.default, init=False, repr=False)
+    _style: Style = field(default=Style.default, init=False, repr=False)
 
     @property
     def frame(self):
         """Frame controlling dimensions of AbstractWindow."""
-        if self.__frame is None:
+        if self._frame is None:
             raise errors.WindowError(f"No Frame has been bound to {self.__class__.__name__}.")
-        return self.__frame
+        return self._frame
 
     @property
     def ready(self) -> bool:
@@ -58,13 +58,13 @@ class AbstractWindow(ABC):
 
     def bind_frame(self, frame: Frame | None):
         """Bind Frame to AbstractWindow."""
-        self.__frame = frame
+        self._frame = frame
         return self
 
     def on_frame_update(self):
         # init / resize window or silently fail on error (e.g. screen overflow)
         try:
-            if not self.__internal:
+            if not self._internal:
                 self.init(self.frame.left, self.frame.top, self.frame.width, self.frame.height)
             else:
                 self.resize(self.frame.left, self.frame.top, self.frame.width, self.frame.height)
@@ -74,7 +74,7 @@ class AbstractWindow(ABC):
 
     def set_style(self, style: Style):
         """Assign new Style to window."""
-        self.__style = style
+        self._style = style
         self.apply_style()
         return self
 
@@ -92,14 +92,14 @@ class AbstractWindow(ABC):
 
     @property
     def style(self):
-        return self.__style
+        return self._style
 
     @property
     def internal(self):
         """Internal curses window."""
-        if self.__internal is None:
+        if self._internal is None:
             raise errors.WindowNotInitializedError("Window must be initialized before being accessed.")
-        return self.__internal
+        return self._internal
 
     def get_attr(
         self,
@@ -311,8 +311,8 @@ class AbstractWindow(ABC):
         raise NotImplementedError
 
     def clear(self):
-        if self.__internal:
-            self.__internal.clear()
+        if self._internal:
+            self._internal.clear()
 
     @abstractmethod
     def init(self, left: int, top: int, width: int, height: int):
@@ -328,18 +328,18 @@ class AbstractWindow(ABC):
 @dataclass
 class Window(AbstractWindow):
     def noutrefresh(self):
-        if self.__internal:
-            self.__internal.noutrefresh()
+        if self._internal:
+            self._internal.noutrefresh()
         return self
 
     def init(self, left: int, top: int, width: int, height: int):
-        self.__internal = curses.newwin(height, width, top, left)
+        self._internal = curses.newwin(height, width, top, left)
         return self
 
     def resize(self, left: int, top: int, width: int, height: int):
-        if self.__internal:
-            self.__internal.resize(height, width)
-            self.__internal.mvwin(top, left)
+        if self._internal:
+            self._internal.resize(height, width)
+            self._internal.mvwin(top, left)
         return self
 
 
@@ -362,10 +362,10 @@ class Pad(AbstractWindow):
                 self._content_width = max(len(s) for s in self.content)
 
     def noutrefresh(self):
-        if self.__internal:
+        if self._internal:
             f = self.frame
             # using absolute values since pad coordinates are relative to screen
-            self.__internal.noutrefresh(
+            self._internal.noutrefresh(
                 self.top_shift,
                 self.left_shift,
                 f.top_abs + f.padding_top,
@@ -377,11 +377,11 @@ class Pad(AbstractWindow):
 
     def init(self, left: int, top: int, width: int, height: int):
         # we use max values to ensure that the pad does not underflow the normal dimensions
-        self.__internal = curses.newpad(max(self.content_height, height), max(self.content_width, width))
+        self._internal = curses.newpad(max(self.content_height, height), max(self.content_width, width))
         # add content
         if self.content is not None:
             for i, line in enumerate(self.content):
-                self.__internal.addstr(i, 0, line)
+                self._internal.addstr(i, 0, line)
         return self
 
     def resize(self, left: int, top: int, width: int, height: int):
@@ -471,7 +471,7 @@ class ScrollingPad(Pad):
 @dataclass
 class ScreenWindow(Window):
     def init(self, *args, **kwargs):
-        self.__internal = curses.initscr()
+        self._internal = curses.initscr()
         return self
 
     @property
