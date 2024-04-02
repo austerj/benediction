@@ -4,6 +4,7 @@ import typing
 from dataclasses import dataclass, field
 
 from benediction import errors
+from benediction._utils import to_abs
 
 if typing.TYPE_CHECKING:
     from benediction.core.node.spec import NodeSpec
@@ -383,36 +384,21 @@ class ConstrainedFrame:
         ]
         return f"{self.__class__.__name__}({', '.join(attrs)})"
 
-    @typing.overload
-    @staticmethod
-    def abs(units: int | float, space_outer: int) -> int:
-        ...
-
-    @typing.overload
-    @staticmethod
-    def abs(units: None, space_outer: int) -> None:
-        ...
-
-    @staticmethod
-    def abs(units: int | float | None, space_outer: int):
-        """Interpret as absolute units if integer, otherwise as rounded-down ratio of space."""
-        return int(units * space_outer) if isinstance(units, float) else units
-
     def height_bounds(self, height_outer: int) -> tuple[int | None, int | None]:
         """Get height bounds for outer height."""
-        return self.abs(self.height_min, height_outer), self.abs(self.height_max, height_outer)
+        return to_abs(self.height_min, height_outer), to_abs(self.height_max, height_outer)
 
     def width_bounds(self, width_outer: int) -> tuple[int | None, int | None]:
         """Get width bounds for outer width."""
-        return self.abs(self.width_min, width_outer), self.abs(self.width_max, width_outer)
+        return to_abs(self.width_min, width_outer), to_abs(self.width_max, width_outer)
 
     def margins(self, height_outer: int, width_outer: int):
         """Get (top, bottom, left, right)-margins for outer height and width."""
         return (
-            self.abs(self.margin_top, height_outer),
-            self.abs(self.margin_bottom, height_outer),
-            self.abs(self.margin_left, width_outer),
-            self.abs(self.margin_right, width_outer),
+            to_abs(self.margin_top, height_outer),
+            to_abs(self.margin_bottom, height_outer),
+            to_abs(self.margin_left, width_outer),
+            to_abs(self.margin_right, width_outer),
         )
 
     def dimensions(self, top: int, left: int, height: int, width: int, height_outer: int, width_outer: int):
@@ -423,10 +409,10 @@ class ConstrainedFrame:
     def padding(self, height_outer: int, width_outer: int):
         """Get (top, bottom, left, right)-padding for outer height and width."""
         return (
-            self.abs(self.padding_top, height_outer),
-            self.abs(self.padding_bottom, height_outer),
-            self.abs(self.padding_left, width_outer),
-            self.abs(self.padding_right, width_outer),
+            to_abs(self.padding_top, height_outer),
+            to_abs(self.padding_bottom, height_outer),
+            to_abs(self.padding_left, width_outer),
+            to_abs(self.padding_right, width_outer),
         )
 
     def set_dimensions(
@@ -439,10 +425,10 @@ class ConstrainedFrame:
         width_outer: int,
     ):
         """Assign dimensions to inner Frame and return (top, left, height, width) dimensions."""
-        if not self.height is None and height != self.abs(self.height, height_outer):
+        if not self.height is None and height != to_abs(self.height, height_outer):
             cons = "absolute" if isinstance(self.height, int) else "relative"
             raise errors.FrameConstraintError(f"Height violates exact ({cons}) height constraint.")
-        if not self.width is None and width != self.abs(self.width, width_outer):
+        if not self.width is None and width != to_abs(self.width, width_outer):
             cons = "absolute" if isinstance(self.height, int) else "relative"
             raise errors.FrameConstraintError(f"Width violates exact ({cons}) width constraint.")
         # validate against min/max constraints
