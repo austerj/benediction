@@ -4,8 +4,8 @@ import typing
 from dataclasses import dataclass
 
 from benediction import errors
-from benediction.core.node.layout import Column, Row
-from benediction.core.node.layout.layout import LayoutNode
+from benediction.core.node import Node
+from benediction.core.node.layout import Column, LayoutNode, Row
 from benediction.core.node.spec import ColumnSpecKwargs, NodeSpecKwargs, RowSpecKwargs
 from benediction.core.window import AbstractWindow
 
@@ -111,3 +111,14 @@ class Layout:
     def order(self):
         """Order of layout (row / column major)."""
         return self.root.orientation
+
+    @typing.overload
+    def __getitem__(self, __i: typing.SupportsIndex) -> Node:
+        ...
+
+    @typing.overload
+    def __getitem__(self, __s: slice) -> list[Node]:
+        ...
+
+    def __getitem__(self, i):
+        return self.root.__getitem__(i)
