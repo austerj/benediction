@@ -24,7 +24,7 @@ class Node(ABC):
     # constrained frame
     cframe: ConstrainedFrame = field(init=False, repr=False)
     # caching style to get inheritance at access-time + avoid recursively deriving Styles
-    __cached_style: Style | None = field(default=None, init=False)
+    _cached_style: Style | None = field(default=None, init=False)
     # window mapped to Node frame
     _window: AbstractWindow | None = field(default=None, init=False)
 
@@ -61,18 +61,18 @@ class Node(ABC):
         return self.cframe.frame
 
     @property
-    def style(self):
+    def style(self) -> Style:
         """Style object associated with Node."""
         # NOTE: caching allows for inheriting at access time and protects us against exponential
         # growth in recursively inheriting from parent Nodes (at the cost of dealing with
         # invalidation when styles change)
-        if getattr(self, "_Node__cached_style", None) is not None:
-            return self.__cached_style
+        if (cached_style := getattr(self, "_Node__cached_style", None)) is not None:
+            return cached_style
         # construct Style from spec if not found in cache
         parent_style = self.parent.style if self.parent is not None else None
         derived_style = self.spec.derive_style(parent_style)
         # cache derived Style and return
-        self.__cached_style = derived_style
+        self._cached_style = derived_style
         return derived_style
 
     def update_style(self, **kwargs: typing.Unpack[WindowStyleKwargs]):
@@ -118,6 +118,7 @@ class Node(ABC):
         self.frame.bind_window(window)
         if window:
             window.bind_frame(self.frame)
+            window.set_style(self.style)
         return self
 
     @property
