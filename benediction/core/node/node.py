@@ -123,7 +123,7 @@ class Node(ABC):
         self.apply(lambda node: nodes.append(node), depth, include_self)
         return nodes
 
-    def bind(self, window: AbstractWindow):
+    def bind(self, window: AbstractWindow | None):
         """Bind AbstractWindow to Node."""
         self._window = window
         return self
@@ -131,7 +131,7 @@ class Node(ABC):
     @property
     def window(self):
         """AbstractWindow mapped to Node Frame."""
-        if not self._window:
+        if self._window is None:
             raise errors.UnboundWindowError("Window must be bound to Node before being accessed.")
         return self._window
 
