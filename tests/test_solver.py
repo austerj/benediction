@@ -1,8 +1,10 @@
 # see https://github.com/austerj/equitable-integers
+import typing
+
 import pytest
 
 from benediction import errors
-from benediction._utils.solver import Bounds, SpaceAllocator, solve
+from benediction.core.node.layout.solver import Bounds, SpaceAllocator, solve
 
 bounds = (
     # bounds 0
@@ -156,7 +158,7 @@ bounds = (
 )
 
 
-def solution_correct(bounds: Bounds, budget: int) -> bool:
+def solution_correct(bounds: typing.Sequence[Bounds], budget: int) -> bool:
     """Check that a solution is optimal."""
     # solve for allocations
     allocations = solve(bounds, budget)
@@ -172,7 +174,7 @@ def solution_correct(bounds: Bounds, budget: int) -> bool:
     )
 
 
-def constraints_met(bounds: Bounds, allocations: tuple[int, ...]) -> bool:
+def constraints_met(bounds: typing.Sequence[Bounds], allocations: tuple[int, ...]) -> bool:
     """Check that the full budget is allocated."""
     return all(
         # lower bounds are adhered to
@@ -188,7 +190,7 @@ def allocation_full(allocations: tuple[int, ...], budget: int) -> bool:
     return sum(allocations) == budget
 
 
-def integers_optimal(bounds: Bounds, allocations: tuple[int, ...]) -> bool:
+def integers_optimal(bounds: typing.Sequence[Bounds], allocations: tuple[int, ...]) -> bool:
     """Check that no integer value can be moved to produce a more equitable allocation."""
     # no integer can be reallocated in a way that would lead to a more equitable allocation; i.e.
     # the difference between the largest value that is not lower-bounded and the smallest value that
