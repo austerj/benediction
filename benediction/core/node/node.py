@@ -7,6 +7,7 @@ from dataclasses import InitVar, dataclass, field
 from benediction import errors
 from benediction.core.frame import ConstrainedFrame
 from benediction.core.node.spec import NodeSpec, NodeSpecKwargs
+from benediction.core.window import AbstractWindow
 from benediction.style.style import Style, WindowStyleKwargs
 
 
@@ -24,6 +25,8 @@ class Node(ABC):
     cframe: ConstrainedFrame = field(init=False, repr=False)
     # caching style to get inheritance at access-time + avoid recursively deriving Styles
     __cached_style: Style | None = field(default=None, init=False)
+    # window mapped to Node frame
+    _window: AbstractWindow | None = field(default=None, init=False)
 
     def __post_init__(self, spec_kwargs: NodeSpecKwargs | None):
         # set spec and frame
@@ -119,6 +122,18 @@ class Node(ABC):
         nodes = []
         self.apply(lambda node: nodes.append(node), depth, include_self)
         return nodes
+
+    def bind(self, window: AbstractWindow):
+        """Bind AbstractWindow to Node."""
+        self._window = window
+        return self
+
+    @property
+    def window(self):
+        """AbstractWindow mapped to Node Frame."""
+        if not self._window:
+            raise errors.UnboundWindowError("Window must be bound to Node before being accessed.")
+        return self._window
 
     @abstractmethod
     def update_frame(
