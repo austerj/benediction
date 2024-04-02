@@ -154,18 +154,18 @@ class NodeSpec:
             width_min=min_w,
             width_max=max_w,
             # gaps
-            gap_x=gap_x if gap_x is not None else gap if gap is not None else 0,
-            gap_y=gap_y if gap_y is not None else gap if gap is not None else 0,
+            gap_x=_prioritize(gap_x, gap, default=0),
+            gap_y=_prioritize(gap_y, gap, default=0),
             # margins with priority given to most specific keyword
-            margin_top=mt if mt is not None else my if my is not None else m if m is not None else 0,
-            margin_bottom=mb if mb is not None else my if my is not None else m if m is not None else 0,
-            margin_left=ml if ml is not None else mx if mx is not None else m if m is not None else 0,
-            margin_right=mr if mr is not None else mx if mx is not None else m if m is not None else 0,
+            margin_top=_prioritize(mt, my, m, default=0),
+            margin_bottom=_prioritize(mb, my, m, default=0),
+            margin_left=_prioritize(ml, mx, m, default=0),
+            margin_right=_prioritize(mr, mx, m, default=0),
             # padding with priority given to most specific keyword
-            padding_top=pt if pt is not None else py if py is not None else p if p is not None else 0,
-            padding_bottom=pb if pb is not None else py if py is not None else p if p is not None else 0,
-            padding_left=pl if pl is not None else px if px is not None else p if p is not None else 0,
-            padding_right=pr if pr is not None else px if px is not None else p if p is not None else 0,
+            padding_top=_prioritize(pt, py, p, default=0),
+            padding_bottom=_prioritize(pb, py, p, default=0),
+            padding_left=_prioritize(pl, px, p, default=0),
+            padding_right=_prioritize(pr, px, p, default=0),
             # style
             base_style=base_style,
             style_kwargs=style_kwargs,
@@ -185,3 +185,11 @@ class NodeSpec:
         """Derive Style object from NodeSpec."""
         base_style = Style.default if (self.base_style == "default" or parent_style is None) else parent_style
         return base_style.derive(**self.style_kwargs)
+
+
+def _prioritize(*args, default):
+    """Return first not-None arg or the default value."""
+    for arg in args:
+        if arg is not None:
+            return arg
+    return default
