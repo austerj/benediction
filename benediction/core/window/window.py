@@ -65,9 +65,9 @@ class AbstractWindow(ABC):
         # init / resize window or silently fail on error (e.g. screen overflow)
         try:
             if not self._internal:
-                self.init(self.frame.left, self.frame.top, self.frame.width, self.frame.height)
+                self.init()
             else:
-                self.resize(self.frame.left, self.frame.top, self.frame.width, self.frame.height)
+                self.resize()
             self.apply_style()
         except curses.error:
             pass
@@ -315,12 +315,12 @@ class AbstractWindow(ABC):
             self._internal.clear()
 
     @abstractmethod
-    def init(self, left: int, top: int, width: int, height: int):
+    def init(self):
         """Initialize internal curses Window."""
         raise NotImplementedError
 
     @abstractmethod
-    def resize(self, left: int, top: int, width: int, height: int):
+    def resize(self):
         """Resize internal curses Window."""
         raise NotImplementedError
 
@@ -332,12 +332,14 @@ class Window(AbstractWindow):
             self._internal.noutrefresh()
         return self
 
-    def init(self, left: int, top: int, width: int, height: int):
+    def init(self):
+        top, left, height, width = self.frame.window_params
         self._internal = curses.newwin(height, width, top, left)
         return self
 
-    def resize(self, left: int, top: int, width: int, height: int):
+    def resize(self):
         if self._internal:
+            top, left, height, width = self.frame.window_params
             self._internal.resize(height, width)
             self._internal.mvwin(top, left)
         return self
@@ -375,8 +377,9 @@ class Pad(AbstractWindow):
             )
         return self
 
-    def init(self, left: int, top: int, width: int, height: int):
+    def init(self):
         # we use max values to ensure that the pad does not underflow the normal dimensions
+        height, width = self.frame.height_outer, self.frame.width_outer
         self._internal = curses.newpad(max(self.content_height, height), max(self.content_width, width))
         # add content
         if self.content is not None:
@@ -384,7 +387,7 @@ class Pad(AbstractWindow):
                 self._internal.addstr(i, 0, line)
         return self
 
-    def resize(self, left: int, top: int, width: int, height: int):
+    def resize(self):
         # pad is "resized" on refresh
         return self
 
