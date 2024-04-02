@@ -81,6 +81,9 @@ class Node(ABC):
         self.spec = self.spec.update_style(**kwargs)
         # invalidate all cached styles (that may have derived from replaced Style)
         self.apply(lambda node: delattr(node, "_cached_style"))
+        # assign updated style to window
+        if self._window:
+            self._window.set_style(self.style)
         return self
 
     def append(self, node: Node):
