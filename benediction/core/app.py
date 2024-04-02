@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from benediction import errors
 from benediction.core.node.spec import NodeSpecKwargs
-from benediction.screen import CursorVisibility, Screen
+from benediction.core.screen import CursorVisibility, Screen
 
 ErrorType = typing.Literal["curses", "benediction", "all", "layout", "window"]
 _ERRORS: dict[ErrorType, typing.Type[Exception]] = {

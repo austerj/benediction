@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass
 
 from benediction import errors
-from benediction.core.node import Node
+from benediction.core.node.node import Node
 from benediction.core.node.layout import Column, LayoutNode, Row
 from benediction.core.node.spec import ColumnSpecKwargs, NodeSpecKwargs, RowSpecKwargs
 from benediction.core.window import AbstractWindow
