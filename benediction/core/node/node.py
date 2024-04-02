@@ -31,15 +31,25 @@ class Node(ABC):
         self.spec = NodeSpec.from_kwargs(**spec_kwargs)
         self.cframe = ConstrainedFrame.from_spec(self.spec)
 
+        # iterating over nodes followed by (unique) parents => only one assignment per parent
+        # NOTE: using ids should be okay to use as proxy for unique objects here since it shouldn't
+        # be possible for any of these objects to not stay alive (and have their ids replaced)
+        parent_to_children: dict[int, list[int]] = {}
+        parents: list[Node] = []
         for node in self.children:
             if (old_parent := node.parent) is not None:
-                # iterate over child nodes and pop + break out on a match (by id - NOT equality!)
-                for i, child_node in enumerate(old_parent.children):
-                    if node is child_node:
-                        old_parent.children.pop(i)
-                        break
-
+                # add to dict
+                if (parent_id := id(old_parent)) not in parent_to_children:
+                    parent_to_children[parent_id] = [id(node)]
+                    parents.append(old_parent)
+                else:
+                    parent_to_children[parent_id].append(id(node))
+            # update parent of reassigned node
             node.parent = self
+        # remove ids from parents
+        for parent in parents:
+            removed_ids = set(parent_to_children[id(parent)])
+            parent.children = [node for node in parent.children if id(node) not in removed_ids]
 
     def __repr__(self):
         return f"{self.__class__.__name__}({', '.join([str(c) for c in self.children])})"
@@ -56,7 +66,7 @@ class Node(ABC):
         return self.children.__getitem__(i)
 
     def __contains__(self, node: Node):
-        # compare by id (i.e. by memory - NOT equality)
+        # compare by id (i.e. by memory - NOT equality) - use with caution
         node_id = id(node)
         return any(node_id == id(child) for child in self.children)
 

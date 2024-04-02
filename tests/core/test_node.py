@@ -148,3 +148,33 @@ def test_parent_removal():
 
     # the parent of the nested node is still the same
     assert node_1_0.parent is node_1
+
+    # test removal from two different parents
+    parent_0 = ContainerNode(
+        [
+            child_0_0 := ContainerNode(),
+            child_0_1 := ContainerNode(),
+            child_0_2 := ContainerNode(),
+        ]
+    )
+    parent_1 = ContainerNode(
+        [
+            child_1_0 := ContainerNode(),
+            child_1_1 := ContainerNode(),
+        ]
+    )
+    assert child_0_0 in parent_0
+    assert child_0_1 in parent_0
+    assert child_0_2 in parent_0
+    assert child_1_0 in parent_1
+    assert child_1_1 in parent_1
+
+    parent_2 = ContainerNode([child_0_0, child_0_1, child_1_0])
+    assert child_0_0 in parent_2
+    assert child_0_1 in parent_2
+    assert child_1_0 in parent_2
+    assert child_0_0 not in parent_0
+    assert child_0_1 not in parent_0
+    assert child_0_2 in parent_0
+    assert child_1_0 not in parent_1
+    assert child_1_1 in parent_1
