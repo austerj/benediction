@@ -40,8 +40,9 @@ class LayoutNodeFactory:
     def col(self, window: AbstractWindow | None = None, **kwargs: typing.Unpack[ColumnSpecKwargs]):
         """Add new column with fixed or dynamic width."""
         if self.node.is_col:
-            # adding col from a col node => appending a col to the parent column
+            # adding col from a col node => appending a col to the parent column (and moving back)
             self.parent.col(window, **kwargs)
+            return self.parent
         else:
             # adding col from row node => append a col to the row node
             new_col = Column(**kwargs).bind(window)
@@ -56,8 +57,9 @@ class LayoutNodeFactory:
     ):
         """Add new row with fixed or dynamic height."""
         if self.node.is_row:
-            # adding row from a row node => appending a row to the parent column
+            # adding row from a row node => appending a row to the parent column (and moving back)
             self.parent.row(window, **kwargs)
+            return self.parent
         else:
             # adding row from column node => append a row to the column node
             new_row = Row(**kwargs).bind(window)
@@ -83,7 +85,7 @@ class Layout:
         self.kwargs = kwargs
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.root})"
+        return f"{self.__class__.__name__}({self.root if self.__root is not None else ''})"
 
     def row(self, window: AbstractWindow | None = None, **kwargs: typing.Unpack[RowSpecKwargs]):
         """Subdivide layout into rows via chained methods."""
