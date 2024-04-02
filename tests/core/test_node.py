@@ -178,3 +178,12 @@ def test_parent_removal():
     assert child_0_2 in parent_0
     assert child_1_0 not in parent_1
     assert child_1_1 in parent_1
+
+    # test that explicit appending also moves parent
+    parent_2.append(child_0_2)
+    assert child_0_2 in parent_2
+    assert child_0_2 not in parent_0
+
+    # cannot append if already a child node
+    with pytest.raises(errors.NodeError):
+        parent_2.append(child_0_2)

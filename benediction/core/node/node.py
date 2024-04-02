@@ -103,7 +103,15 @@ class Node(ABC):
 
     def append(self, node: Node):
         """Append a new child Node."""
+        if node in self.children:
+            raise errors.NodeError("Cannot append Node: is already a child.")
         self.children.append(node)
+        # remove from old parent
+        if (old_parent := node.parent) is not None:
+            for i, parent_node in enumerate(old_parent.children):
+                if node is parent_node:
+                    old_parent.children.pop(i)
+                    break
         node.parent = self
 
     def apply(self, fn: typing.Callable[[Node], typing.Any], depth: int = -1, to_self: bool = True):
