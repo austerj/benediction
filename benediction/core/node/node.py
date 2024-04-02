@@ -115,6 +115,8 @@ class Node(ABC):
     def bind_window(self, window: AbstractWindow | None):
         """Bind AbstractWindow to Node."""
         self._window = window
+        if window:
+            window.bind_frame(self.frame)
         return self
 
     @property
