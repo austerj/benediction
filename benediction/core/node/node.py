@@ -66,7 +66,7 @@ class Node(ABC):
         # NOTE: caching allows for inheriting at access time and protects us against exponential
         # growth in recursively inheriting from parent Nodes (at the cost of dealing with
         # invalidation when styles change)
-        if (cached_style := getattr(self, "_Node__cached_style", None)) is not None:
+        if (cached_style := getattr(self, "_cached_style", None)) is not None:
             return cached_style
         # construct Style from spec if not found in cache
         parent_style = self.parent.style if self.parent is not None else None
@@ -80,7 +80,7 @@ class Node(ABC):
         # update style kwargs in spec
         self.spec = self.spec.update_style(**kwargs)
         # invalidate all cached styles (that may have derived from replaced Style)
-        self.apply(lambda node: delattr(node, "_Node__cached_style"))
+        self.apply(lambda node: delattr(node, "_cached_style"))
         return self
 
     def append(self, node: Node):
