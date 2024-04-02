@@ -137,6 +137,23 @@ class Frame:
         """Width of inner region (with padding)."""
         return self.width_outer - (self.__padding_left + self.__padding_right)
 
+    # padding
+    @property
+    def padding_top(self) -> int:
+        return self.__padding_top
+
+    @property
+    def padding_bottom(self) -> int:
+        return self.__padding_bottom
+
+    @property
+    def padding_left(self) -> int:
+        return self.__padding_left
+
+    @property
+    def padding_right(self) -> int:
+        return self.__padding_right
+
     # absolute positions
     @property
     def top_abs(self) -> int:
@@ -233,6 +250,27 @@ class Frame:
     def right(self) -> int:
         """Right (x-coordinate, relative padded)."""
         return self.left + self.width - 1
+
+    # aggregate coordinates and props
+    @property
+    def inner_dimensions(self):
+        """Get inner (top, bottom, left, right) dimensions."""
+        return self.top, self.bottom, self.left, self.right
+
+    @property
+    def outer_dimensions(self):
+        """Get outer (top, bottom, left, right) dimensions."""
+        return self.top_outer, self.bottom_outer, self.left_outer, self.right_outer
+
+    @property
+    def absolute_dimensions(self):
+        """Get absolute (top, bottom, left, right) dimensions."""
+        return self.top_abs, self.bottom_abs, self.left_abs, self.right_abs
+
+    @property
+    def padding(self):
+        """Get (top, bottom, left, right) padding."""
+        return self.padding_top, self.padding_bottom, self.padding_left, self.padding_right
 
     # utility methods
     @staticmethod
