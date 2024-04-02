@@ -289,6 +289,11 @@ class Frame:
         """Get (top, bottom, left, right) padding."""
         return self.padding_top, self.padding_bottom, self.padding_left, self.padding_right
 
+    @property
+    def window_params(self):
+        """Get (absolute top, absolute left, outer height, outer width) window parameters."""
+        return self.top_abs, self.left_abs, self.height_outer, self.width_outer
+
     # utility methods
     @staticmethod
     def _infer_overflow_boundary(*yxs: int | float | HorizontalPosition | VerticalPosition | None) -> OverflowBoundary:
