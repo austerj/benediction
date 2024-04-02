@@ -480,10 +480,18 @@ class ConstrainedFrame:
         width_outer: int,
     ):
         """Assign dimensions to inner Frame and return (top, left, height, width) dimensions."""
-        if not self.height is None and height != to_abs(self.height, height_outer):
+        if (
+            not self.height is None
+            and (self.height_min is None and self.height_max is None)
+            and height != to_abs(self.height, height_outer)
+        ):
             cons = "absolute" if isinstance(self.height, int) else "relative"
             raise errors.FrameConstraintError(f"Height violates exact ({cons}) height constraint.")
-        if not self.width is None and width != to_abs(self.width, width_outer):
+        if (
+            not self.width is None
+            and (self.width_min is None and self.width_max is None)
+            and width != to_abs(self.width, width_outer)
+        ):
             cons = "absolute" if isinstance(self.height, int) else "relative"
             raise errors.FrameConstraintError(f"Width violates exact ({cons}) width constraint.")
         # validate against min/max constraints
